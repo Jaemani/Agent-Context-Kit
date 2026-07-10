@@ -4,7 +4,7 @@
 ## Repository evidence
 
 - Branch: "main"
-- HEAD: "d7a83e4 at 2026-07-11T01:49:11+09:00"
+- HEAD: "f7d0826 at 2026-07-11T01:56:31+09:00"
 - Upstream: "origin/main; ahead 1, behind 0"
 - Working tree: Clean (snapshot file excluded)
 - Staged diff: 0 file(s), +0/-0, 0 binary
@@ -17,11 +17,11 @@ None.
 
 ### Recent commits (5)
 
+    {"commit":"f7d0826","committedAt":"2026-07-11T01:56:31+09:00","subject":"docs: record Carrylog beta4 verification"}
     {"commit":"d7a83e4","committedAt":"2026-07-11T01:49:11+09:00","subject":"feat: migrate project identity to Carrylog"}
     {"commit":"d99f92f","committedAt":"2026-07-10T21:39:18+09:00","subject":"docs: record beta3 release verification"}
     {"commit":"65230d8","committedAt":"2026-07-10T21:34:23+09:00","subject":"fix: publish exact local release artifact"}
     {"commit":"774dc2d","committedAt":"2026-07-10T18:19:31+09:00","subject":"fix: validate npm provenance client"}
-    {"commit":"8561b78","committedAt":"2026-07-10T17:55:56+09:00","subject":"docs: record beta1 release verification"}
 <!-- agent-context-kit:handoff-snapshot:end -->
 
 ## Last verified
@@ -63,11 +63,16 @@ publish beta.4 from a new immutable tag, and retire the old package and bootstra
 - Independent code/security, release/workflow, and documentation reviews returned GO with no P0/P1/P2.
 - Sandboxed package smoke timed out during isolated registry install; the unchanged registry-enabled
   gate passed under npm 10/11, confirming an environment boundary rather than package failure.
+- CI run `29108810508` passed all eleven jobs on exact head `0b77aac`, including every supported OS,
+  Node 22/24, exact minimum Node 22.0.0, npm 11 release, and npm 12 package contracts.
+- Clean exact npm 11 release verification passed on `0b77aac`; its pre-record artifact SHA-256 was
+  `f3ba0076dd41337dcc0a74b47a00b2f35562fb802395213e59d0ee4b61bbb4f8`. The packaged engineering
+  record changes the final tarball, so final clean verification must produce the tag candidate anew.
 
 ## Remaining
 
-- Commit this refreshed handoff evidence, push both beta.4 commits, require every remote CI job, then
-  run final clean release verification from the exact remote-tested commit.
+- Commit this refreshed handoff, push the verification records, require the final remote CI matrix,
+  then rerun clean release verification from that exact remote-tested commit.
 - Recheck npm name availability, create `v0.1.0-beta.4`, approve the protected environment, and
   monitor the first Carrylog publication without blindly retrying ambiguous registry state.
 - Verify digests, provenance, npx, global install, init, and validate; remove Carrylog `latest` if
@@ -76,4 +81,4 @@ publish beta.4 from a new immutable tag, and retire the old package and bootstra
 
 ## Next action
 
-Commit this handoff evidence, push the reviewed beta.4 tree, and require the complete remote CI matrix.
+Commit this handoff evidence, push the verification records, and require the final remote CI matrix.
