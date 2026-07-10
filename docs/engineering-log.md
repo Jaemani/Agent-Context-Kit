@@ -345,6 +345,13 @@ envelopes, strict artifact metadata validation, all three consumers, exact-toolc
 workflow semantics, immutable tag/version policy, documentation consistency, and the future resume
 boundary. The managed handoff snapshot was refreshed after the review's only evidence-freshness note.
 
+Commit `06f9b9c` then passed all eleven jobs in CI run `29081191523`. The new exact Node.js
+24.15.0/npm 12.0.0 job passed alongside Node 22/24 quality on Linux, macOS, and Windows; package smoke
+on all supported operating systems; and the exact minimum Node.js 22.0.0 path. A clean exact-toolchain
+`npm run release:verify` passed on the same commit and produced a 117-file artifact with SHA-256
+`667c6833f73ef7075cff662ce958beb1f2c038e5bea8feee3fdb663cfcf01c08`. The final tagged commit will
+rebuild and record its own artifact after this verification record is committed.
+
 ## 2026-07-10 — Universal resume was bounded to explicit project state
 
 The future cross-agent resume goal is a one-command user experience, not a claim that every coding

@@ -4,42 +4,25 @@
 ## Repository evidence
 
 - Branch: "main"
-- HEAD: "307fe5b at 2026-07-10T16:35:21+09:00"
+- HEAD: "06f9b9c at 2026-07-10T17:52:50+09:00"
 - Upstream: "origin/main; ahead 0, behind 0"
-- Working tree: 0 staged, 17 unstaged, 2 untracked, 0 conflicted
+- Working tree: 0 staged, 2 unstaged, 0 untracked, 0 conflicted
 - Staged diff: 0 file(s), +0/-0, 0 binary
-- Unstaged diff: 17 file(s), +153/-35, 0 binary
+- Unstaged diff: 2 file(s), +11/-4, 0 binary
 - Scope: project directory; changed paths are project-relative; this handoff snapshot file is excluded
 
-### Changed paths (19)
+### Changed paths (2)
 
     {"status":" M","path":".agent-context/current-state.md"}
-    {"status":" M","path":".github/workflows/ci.yml"}
-    {"status":" M","path":".github/workflows/release.yml"}
-    {"status":" M","path":"CHANGELOG.md"}
-    {"status":" M","path":"README.md"}
-    {"status":" M","path":"ROADMAP.md"}
-    {"status":" M","path":"docs/configuration.md"}
     {"status":" M","path":"docs/engineering-log.md"}
-    {"status":" M","path":"docs/product-scope.md"}
-    {"status":" M","path":"docs/releasing.md"}
-    {"status":" M","path":"docs/testing-strategy.md"}
-    {"status":" M","path":"package-lock.json"}
-    {"status":" M","path":"package.json"}
-    {"status":" M","path":"scripts/build-release-artifact.mjs"}
-    {"status":"??","path":"scripts/lib/npm-pack-json.mjs"}
-    {"status":" M","path":"scripts/package-dry-run.mjs"}
-    {"status":" M","path":"scripts/package-smoke.mjs"}
-    {"status":" M","path":"tests/cli.test.mjs"}
-    {"status":"??","path":"tests/npm-pack-json.test.mjs"}
 
 ### Recent commits (5)
 
+    {"commit":"06f9b9c","committedAt":"2026-07-10T17:52:50+09:00","subject":"fix: support npm 12 pack metadata"}
     {"commit":"307fe5b","committedAt":"2026-07-10T16:35:21+09:00","subject":"docs: record licensed release verification"}
     {"commit":"19232ef","committedAt":"2026-07-10T16:31:35+09:00","subject":"docs: license beta under MIT"}
     {"commit":"f2b6bfc","committedAt":"2026-07-10T16:24:46+09:00","subject":"docs: record successful beta matrix"}
     {"commit":"a816117","committedAt":"2026-07-10T16:21:19+09:00","subject":"fix: invoke Windows global shim verbatim"}
-    {"commit":"26668b6","committedAt":"2026-07-10T16:17:32+09:00","subject":"feat: prepare production-minded 0.1 beta"}
 <!-- agent-context-kit:handoff-snapshot:end -->
 
 ## Last verified
@@ -88,18 +71,24 @@ Publish `0.1.0-beta.1` through the protected npm workflow without moving the imm
 - Real npm 10.9.8, npm 11.10.1, and npm 12.0.0 runs passed package dry-run and the complete local,
   ephemeral, global, ESM, TypeScript, init, and validate smoke path.
 - Exact Node.js 24.15.0/npm 12.0.0 package dry-run and smoke passed with 117 files and an
-  84,870-byte dry-run artifact.
+  85,075-byte dry-run artifact.
 - `git diff --check` passed. Dogfood sync/validate and clean-commit release verification remain final
   gates after review and commit.
 - Independent release-failure review found no P0. Its P1 findings were the three consumers sharing the
   array assumption and the need to preserve `beta.0`; both are addressed in the current change.
 - Independent final diff review returned GO with no unresolved P0, P1, or P2 finding after rechecking
   the latest parser, consumers, workflows, tests, tag/version policy, docs, and refreshed handoff.
+- Remote CI run `29081191523` passed all eleven jobs on commit `06f9b9c`, including Node 22/24 quality
+  on Linux, macOS, and Windows; package smoke on all supported operating systems and exact minimum
+  Node.js 22.0.0; and the new exact Node.js 24.15.0/npm 12.0.0 release-toolchain contract.
+- Clean exact-toolchain `npm run release:verify` passed on `06f9b9c`: all 111 tests, dogfood
+  sync/validate, 117-file package inspection, exact-artifact smoke, and runtime audit. The artifact
+  SHA-256 was `667c6833f73ef7075cff662ce958beb1f2c038e5bea8feee3fdb663cfcf01c08`.
 
 ## Unresolved
 
-- The correction still needs expanded remote CI and clean-commit `npm run release:verify` before
-  tagging.
+- The final verification-record commit still needs its remote CI and one clean-commit
+  `npm run release:verify` before tagging.
 - The protected short-lived `NPM_TOKEN` remains configured for first publication. After success,
   configure npm trusted publishing, delete the GitHub secret, and revoke the token immediately.
 - Sequential cross-file commit, the final path-check-to-syscall interval, hard links, and additional
@@ -107,5 +96,5 @@ Publish `0.1.0-beta.1` through the protected npm workflow without moving the imm
 
 ## Next action
 
-Commit and push the reviewed correction, require all eleven CI jobs to pass, then run clean
+Commit and push this final verification record, require all eleven CI jobs to pass, then run clean
 exact-artifact release verification before creating `v0.1.0-beta.1`.

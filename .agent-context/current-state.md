@@ -29,8 +29,8 @@ integrity, provenance, one-off execution, and global installation.
 
 ## In progress
 
-- Commit the independently reviewed npm 12 release-boundary correction and pass the expanded remote CI
-  matrix, then publish `beta.1` without moving the failed `beta.0` tag.
+- Record the passing expanded matrix and clean exact release verification, then publish `beta.1`
+  without moving the failed `beta.0` tag.
 
 ## Blockers and risks
 
@@ -47,5 +47,5 @@ integrity, provenance, one-off execution, and global installation.
 
 ## Next best task
 
-Commit and push the reviewed correction, pass all eleven remote CI jobs, then run final clean-commit
-release verification before creating the `v0.1.0-beta.1` tag.
+Commit and push the final verification record, pass its eleven remote CI jobs, then run one final
+clean-commit release verification before creating the `v0.1.0-beta.1` tag.
