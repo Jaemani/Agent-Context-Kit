@@ -7,8 +7,8 @@ canonical directory. It compiles small instruction-file adapters for Codex and C
 bounded Git evidence without copying the full memory into every tool file.
 
 > Status: `0.1.0-beta.0` release candidate. The package is configured as
-> `@jaemani/agent-context-kit` with the npm `beta` dist-tag, but registry publication is intentionally
-> blocked until the repository owner selects an open-source license.
+> `@jaemani/agent-context-kit` with the npm `beta` dist-tag and MIT license. Registry publication is
+> pending the protected first-publication workflow.
 
 ## Why this exists
 
@@ -60,7 +60,7 @@ npx --no-install ackit validate
 
 Do not mix the one-off example with a later bare `ackit` command unless the package is also installed
 globally or locally. The package is not currently on the registry; use the source workflow below
-until the license/release gate is resolved.
+until the first protected release completes.
 
 ```bash
 git clone https://github.com/Jaemani/Agent-Context-Kit.git
@@ -238,5 +238,4 @@ records its SHA-256, and smoke-tests that exact artifact before publication.
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
 
-No open-source license has been selected yet. Until the owner makes that legal decision, the public
-repository does not grant reuse rights and the npm release workflow remains blocked.
+Agent Context Kit is available under the [MIT License](LICENSE).

@@ -2,8 +2,8 @@
 
 ## Active objective
 
-Finish the `0.1.0-beta.0` release candidate, complete a final large-change review and remote matrix,
-then publish the scoped npm beta only after the owner selects an open-source license.
+Publish the reviewed `0.1.0-beta.0` candidate through the protected npm workflow and verify registry
+integrity, provenance, one-off execution, and global installation.
 
 ## Implemented and locally verified
 
@@ -22,15 +22,14 @@ then publish the scoped npm beta only after the owner selects an open-source lic
   performance, adoption, CLI, schema lifecycle, package installs, ESM, and TypeScript declarations.
 - Clean-build npm beta metadata, local/ephemeral/global package smoke, and exact-SHA
   artifact/provenance workflow.
+- Owner-selected canonical MIT license with an enforced SPDX/content-hash policy.
 
 ## In progress
 
-- Resolve the legal and protected-release prerequisites for public npm publication.
+- Configure the first-publication npm credential if trusted publishing cannot create a new package.
 
 ## Blockers and risks
 
-- No license has been selected, so public npm distribution and reusable open-source rights are not
-  authorized.
 - The first npm publication may need one protected short-lived granular token before trusted
   publishing can be configured; subsequent releases must use OIDC.
 - Sequential cross-file rename and the final path-check-to-syscall TOCTOU window remain; ADR-0007
@@ -42,6 +41,5 @@ then publish the scoped npm beta only after the owner selects an open-source lic
 
 ## Next best task
 
-Obtain an explicit license choice (MIT is recommended), add its canonical file/metadata, configure
-the protected `npm` GitHub environment, and publish the exact reviewed beta artifact through the
-tag-triggered release workflow.
+Commit the canonical MIT policy, pass the full matrix, configure a protected bootstrap token only if
+needed, then tag and verify the exact beta artifact through the release workflow.

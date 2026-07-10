@@ -48,7 +48,8 @@ Semantic Versioning; configuration versions follow the separate contract in ADR-
 
 ### Known limitations
 
-- npm publication is blocked until an open-source license is explicitly selected.
+- First npm publication may require a short-lived protected bootstrap token before trusted publishing
+  can be configured for later OIDC-only releases.
 - Sequential rename is not a portable cross-file transaction; the final read-to-rename TOCTOU window
   cannot be eliminated with current portable Node APIs.
 - Adapter conformance does not launch authenticated Codex/Claude sessions in CI.

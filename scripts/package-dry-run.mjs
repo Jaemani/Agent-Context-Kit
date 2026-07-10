@@ -17,9 +17,11 @@ try {
   const artifact = payload[0];
   const files = new Set(artifact.files.map((file) => file.path));
   assert.equal(files.has("package.json"), true);
+  assert.equal(files.has("LICENSE"), true);
   assert.equal(files.has("README.md"), true);
   assert.equal(files.has("docs/configuration.md"), true);
   assert.equal(files.has("docs/adapter-compatibility.md"), true);
+  assert.equal(files.has("docs/license-policy.json"), true);
   assert.equal(files.has("CHANGELOG.md"), true);
   assert.equal(files.has("dist/cli.js"), true);
   assert.equal(files.has("dist/index.js"), true);

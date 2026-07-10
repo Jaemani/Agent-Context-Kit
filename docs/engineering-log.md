@@ -287,3 +287,17 @@ The complete rerun (`29076427983`) passed all ten jobs. That includes Node 22/24
 macOS, and Windows; package smoke on all three operating systems; and a separate Ubuntu package run on
 the exact minimum supported Node.js 22.0.0. The Windows job invoked the installed global `.cmd` shim,
 so the rerun verified the failed boundary rather than only retesting a compiled JavaScript path.
+
+## 2026-07-10 — MIT release authorization and protected environment
+
+The repository owner explicitly selected the MIT license for the first public beta. The canonical
+license names `Jaemani` as the 2026 copyright holder. Package metadata declares SPDX `MIT`, and
+`docs/license-policy.json` records SHA-256
+`a6549ea6479008f9f2e10fe44c7e068aa0442d012687893f1c3b4cc2d73a4f86`; release verification rejects
+metadata or license-text drift.
+
+GitHub environment `npm` was created with `Jaemani` as a required reviewer and self-review permitted
+for the solo-maintainer workflow. The environment did not contain `NPM_TOKEN`. Because the scoped
+package is not yet registered, first publication may require a short-lived package-scoped granular
+token. The token must be stored only as the protected environment secret, then removed and revoked as
+soon as npm trusted publishing is configured for subsequent OIDC-only releases.

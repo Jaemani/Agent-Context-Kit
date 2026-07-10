@@ -70,6 +70,7 @@ try {
   assert.equal(installedManifest.bin.ackit, "dist/cli.js");
   assert.equal(installedManifest.main, "dist/index.js");
   assert.equal(installedManifest.types, "dist/index.d.ts");
+  assert.equal(installedManifest.license, "MIT");
   assert.deepEqual(installedManifest.publishConfig, {
     access: "public",
     tag: "beta",
@@ -77,6 +78,15 @@ try {
   });
   const installedSchemaPath = path.join(installedRoot, "schemas", "config-v1.schema.json");
   const installedSchema = await readFile(installedSchemaPath, "utf8");
+  const installedLicense = await readFile(path.join(installedRoot, "LICENSE"));
+  const installedLicensePolicy = JSON.parse(
+    await readFile(path.join(installedRoot, "docs", "license-policy.json"), "utf8"),
+  );
+  assert.equal(installedLicensePolicy.spdx, installedManifest.license);
+  assert.equal(
+    createHash("sha256").update(installedLicense).digest("hex"),
+    installedLicensePolicy.sha256,
+  );
   await assert.rejects(() => stat(path.join(installedRoot, "src")), { code: "ENOENT" });
   await assert.rejects(() => stat(path.join(installedRoot, "tests")), { code: "ENOENT" });
   await stat(path.join(installedRoot, "docs", "configuration.md"));
