@@ -4,37 +4,25 @@
 ## Repository evidence
 
 - Branch: "main"
-- HEAD: "774dc2d at 2026-07-10T18:19:31+09:00"
+- HEAD: "65230d8 at 2026-07-10T21:34:23+09:00"
 - Upstream: "origin/main; ahead 0, behind 0"
-- Working tree: 0 staged, 12 unstaged, 2 untracked, 0 conflicted
+- Working tree: 0 staged, 2 unstaged, 0 untracked, 0 conflicted
 - Staged diff: 0 file(s), +0/-0, 0 binary
-- Unstaged diff: 12 file(s), +143/-28, 0 binary
+- Unstaged diff: 2 file(s), +13/-4, 0 binary
 - Scope: project directory; changed paths are project-relative; this handoff snapshot file is excluded
 
-### Changed paths (14)
+### Changed paths (2)
 
     {"status":" M","path":".agent-context/current-state.md"}
-    {"status":" M","path":".github/workflows/ci.yml"}
-    {"status":" M","path":".github/workflows/release.yml"}
-    {"status":" M","path":"CHANGELOG.md"}
-    {"status":" M","path":"README.md"}
-    {"status":" M","path":"ROADMAP.md"}
     {"status":" M","path":"docs/engineering-log.md"}
-    {"status":" M","path":"docs/releasing.md"}
-    {"status":" M","path":"docs/testing-strategy.md"}
-    {"status":" M","path":"package-lock.json"}
-    {"status":" M","path":"package.json"}
-    {"status":" M","path":"scripts/package-smoke.mjs"}
-    {"status":"??","path":"scripts/publish-release-artifact.mjs"}
-    {"status":"??","path":"tests/release-artifact.test.mjs"}
 
 ### Recent commits (5)
 
+    {"commit":"65230d8","committedAt":"2026-07-10T21:34:23+09:00","subject":"fix: publish exact local release artifact"}
     {"commit":"774dc2d","committedAt":"2026-07-10T18:19:31+09:00","subject":"fix: validate npm provenance client"}
     {"commit":"8561b78","committedAt":"2026-07-10T17:55:56+09:00","subject":"docs: record beta1 release verification"}
     {"commit":"06f9b9c","committedAt":"2026-07-10T17:52:50+09:00","subject":"fix: support npm 12 pack metadata"}
     {"commit":"307fe5b","committedAt":"2026-07-10T16:35:21+09:00","subject":"docs: record licensed release verification"}
-    {"commit":"19232ef","committedAt":"2026-07-10T16:31:35+09:00","subject":"docs: license beta under MIT"}
 <!-- agent-context-kit:handoff-snapshot:end -->
 
 ## Last verified
@@ -87,14 +75,23 @@ then verify registry integrity, provenance, one-off execution, and global instal
   They separately checked code/security and workflow/test/document consistency, including tag
   immutability, annotated-tag `GITHUB_SHA`, Windows and space paths, npm client separation, and the
   documented residual path-reopen boundary.
+- Commit `65230d8` passed all eleven jobs in CI run `29093006551`: Node 22/24 quality on Linux,
+  macOS, and Windows; package publish-dry-run smoke on all supported operating systems and exact
+  minimum Node.js 22.0.0; and the npm 11 release/npm 12 package contract.
+- A clean isolated Node.js 24.15.0/npm 11.18.0 `npm run release:verify` passed on the same commit:
+  115 tests, 95.50% lines, 95.51% functions, 90.91% branches, dogfood sync/validate, package
+  inspection, publish dry-run, every install mode, ESM, declarations, init, validate, and audit.
+  The 117-file, 87,957-byte artifact had SHA-256
+  `6b531fedc49f621dc7e58561f14fbd2126f698ef26ffa44708452451549d2fee`.
 
 ## Remaining
 
-- Commit and push the reviewed tree, pass remote CI, and run clean exact npm 11 release verification.
+- Commit and push this verification record, pass its remote CI, and run final clean exact npm 11
+  release verification.
 - Create the new `v0.1.0-beta.3` tag, approve the protected environment, and monitor publication.
 - After success, verify registry digests, provenance, `npx`, and global install; configure trusted
   publishing, remove the GitHub bootstrap secret, and revoke the npm token.
 
 ## Next action
 
-Refresh this evidence block, then commit the reviewed beta.3 correction.
+Refresh this evidence block, then commit the beta.3 verification record.

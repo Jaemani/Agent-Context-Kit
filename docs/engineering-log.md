@@ -432,3 +432,12 @@ space-containing paths, and residual path-reopen risks. The release review indep
 version and annotated-tag immutability, workflow permissions and npm-client separation, real dry-run
 coverage, documentation, and handoff consistency. Both returned GO with no unresolved P0, P1, or P2
 finding.
+
+Commit `65230d8` passed all eleven jobs in CI run `29093006551`, including Node 22/24 quality on
+Linux, macOS, and Windows; package publish-dry-run smoke on every supported operating system and the
+exact minimum Node.js 22.0.0; and the exact npm 11 release/npm 12 package contract. Clean isolated
+Node.js 24.15.0/npm 11.18.0 release verification then passed all 115 tests, dogfood checks, package
+inspection, exact-artifact publish dry-run and consumer smoke, and runtime audit. Its 117-file,
+87,957-byte local artifact had SHA-256
+`6b531fedc49f621dc7e58561f14fbd2126f698ef26ffa44708452451549d2fee`; the final tagged commit and
+protected workflow will each rebuild and identify their own exact artifact.

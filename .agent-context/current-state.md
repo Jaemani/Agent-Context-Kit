@@ -33,9 +33,9 @@ integrity, provenance, one-off execution, and global installation.
 
 ## In progress
 
-- The frozen publish-path correction passed broad local verification and two independent final reviews
-  with no unresolved P0, P1, or P2 finding. Commit and push it, then publish `beta.3` without moving
-  the failed `beta.0`, `beta.1`, or `beta.2` tags.
+- The frozen publish-path correction passed broad local verification, two independent final reviews,
+  all eleven remote CI jobs, and clean exact-toolchain release verification. Record that evidence,
+  pass final gates, then publish `beta.3` without moving the failed tags.
 
 ## Blockers and risks
 
@@ -52,5 +52,5 @@ integrity, provenance, one-off execution, and global installation.
 
 ## Next best task
 
-Commit and push the reviewed beta.3 correction, pass remote gates, then run clean-commit release
+Commit and push the beta.3 verification record, pass final remote gates, then run clean-commit release
 verification before creating the `v0.1.0-beta.3` tag.
