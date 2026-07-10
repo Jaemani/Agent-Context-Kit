@@ -38,15 +38,19 @@ work as a disposable template or toy CLI.
 - Initial remote CI passed package smoke and Node 22/24 on Linux/macOS. Both Windows jobs exposed CRLF
   checkout drift in formatter checks; `.gitattributes` enforced LF and the full rerun passed.
 - CI infrastructure was updated to `checkout@v7`, `setup-node@v6`, and pinned `macos-15`; a final
-  warning-free matrix rerun is pending.
+  warning-free matrix run passed all seven jobs (`29064970408`).
+- Actions were then pinned to their upstream v7/v6 commit SHAs, and Dependabot major compiler/type
+  jumps were separated from routine dependency updates.
 
 ## Unresolved
 
-- Confirm the Actions-major and pinned-macOS follow-up CI on Linux, macOS, Windows and Node 22/24.
 - Select a license and confirm npm scope ownership before public release.
+- Add a public v1 JSON Schema and an explicit future migration contract.
+- TypeScript 7 and `@types/node` 26 are intentionally not adopted as routine updates; review compiler
+  migration and the Node support floor separately.
 - Decide how hard links, filesystem races, and fault injection affect the beta safety bar.
 
 ## Next action
 
-Push the CI infrastructure update, monitor the complete remote matrix, and treat any remaining
-platform-specific or infrastructure failure as an alpha blocker rather than adding new features.
+Resolve license and package ownership with the repository owner, then implement and test the public
+schema/migration contract before adding handoff automation or more agent adapters.

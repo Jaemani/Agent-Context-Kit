@@ -20,8 +20,8 @@ handoff automation, more adapters, skills, or MCP.
 
 ## In progress
 
-- Initial commit/push and remote CI matrix execution.
 - License and npm scope ownership decisions before any public release.
+- Public JSON Schema and version-migration contract for the alpha configuration.
 
 ## Blockers and risks
 
@@ -33,6 +33,6 @@ handoff automation, more adapters, skills, or MCP.
 
 ## Next best task
 
-Create and push the reviewed initial commit, observe all Linux/macOS/Windows and Node 22/24 CI jobs,
-and repair any platform-specific failures before tagging the first alpha. Do not expand into handoff
-automation until that foundation is green.
+Choose the repository license and confirm the npm scope/package name, then add a public JSON Schema
+and migration contract before tagging the first alpha. Do not expand into handoff automation until
+those distribution and compatibility foundations are explicit.

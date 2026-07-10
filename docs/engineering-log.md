@@ -111,4 +111,10 @@ alpha baseline.
 A separate Dependabot proposal jumped TypeScript 5.9 to 7.0 and `@types/node` 22 to 26. Its Linux
 typecheck showed that TypeScript 7 no longer implicitly loaded the Node types in this setup. The
 project now declares `types: ["node"]` explicitly, but the major compiler/runtime-type upgrade remains
-a separately reviewed change rather than being folded into CI maintenance.
+a separately reviewed change rather than being folded into CI maintenance. Dependabot now ignores
+major updates for TypeScript and `@types/node`; the latter intentionally stays aligned with the
+minimum supported Node 22 API surface.
+
+The current Actions major tags were resolved to their upstream commits and pinned by SHA with version
+comments. Dependabot can still propose reviewed SHA updates, while an upstream tag move cannot alter
+CI execution silently.
