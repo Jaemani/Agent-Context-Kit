@@ -282,3 +282,8 @@ The harness still uses `shell: false`. Its dedicated Windows boundary now reject
 metacharacters and opts into `windowsVerbatimArguments` only for the fully constructed, restricted
 `cmd.exe` invocation. This assigns quoting ownership to one layer instead of weakening the smoke test
 or bypassing the installed shim.
+
+The complete rerun (`29076427983`) passed all ten jobs. That includes Node 22/24 quality on Linux,
+macOS, and Windows; package smoke on all three operating systems; and a separate Ubuntu package run on
+the exact minimum supported Node.js 22.0.0. The Windows job invoked the installed global `.cmd` shim,
+so the rerun verified the failed boundary rather than only retesting a compiled JavaScript path.

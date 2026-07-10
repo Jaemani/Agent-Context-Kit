@@ -25,7 +25,7 @@ then publish the scoped npm beta only after the owner selects an open-source lic
 
 ## In progress
 
-- Rerun the Linux/macOS/Windows remote matrix after the Windows global-shim quoting fix.
+- Resolve the legal and protected-release prerequisites for public npm publication.
 
 ## Blockers and risks
 
@@ -42,6 +42,6 @@ then publish the scoped npm beta only after the owner selects an open-source lic
 
 ## Next best task
 
-Commit/push the reviewed candidate and pass the full remote matrix. Then obtain an explicit license
-choice (MIT is recommended), add its canonical file/metadata, and publish the exact reviewed beta
-artifact through the protected release workflow.
+Obtain an explicit license choice (MIT is recommended), add its canonical file/metadata, configure
+the protected `npm` GitHub environment, and publish the exact reviewed beta artifact through the
+tag-triggered release workflow.
