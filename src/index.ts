@@ -1,11 +1,20 @@
 export {
+  hasAnyManagedMarker,
   hasManagedBlock,
   MANAGED_END,
   MANAGED_START,
   upsertManagedBlock,
   wrapManagedBlock,
 } from "./adapters/managed-block.js";
-export { renderAdapter } from "./adapters/render.js";
+export type { AdapterDefinition } from "./adapters/registry.js";
+export {
+  getAdapterDefinition,
+  isAdapterType,
+  listAdapterDefinitions,
+} from "./adapters/registry.js";
+export { markdownCodeSpan, renderAdapter } from "./adapters/render.js";
+export type { HandoffOptions, HandoffResult } from "./commands/handoff.js";
+export { refreshHandoff } from "./commands/handoff.js";
 export type { InitOptions, InitResult } from "./commands/init.js";
 export { initProject } from "./commands/init.js";
 export type {
@@ -14,17 +23,46 @@ export type {
   SyncOptions,
   SyncResult,
 } from "./commands/sync.js";
-export { planAdapterChanges, syncProject } from "./commands/sync.js";
+export { planAdapterChanges, planPublicSchemaChange, syncProject } from "./commands/sync.js";
 export type { ValidateResult } from "./commands/validate.js";
 export { validateProject } from "./commands/validate.js";
 export type { DecodeResult } from "./config/decode.js";
 export { decodeConfig } from "./config/decode.js";
 export { loadProject } from "./config/load.js";
+export {
+  AckitError,
+  EXIT_INTERNAL,
+  EXIT_ISSUES,
+  EXIT_SUCCESS,
+  EXIT_USAGE,
+} from "./core/errors.js";
 export type {
   AdapterConfig,
   AdapterType,
   ContextDocument,
   Diagnostic,
+  DiagnosticLevel,
   LoadedProject,
+  LoadPolicy,
   ProjectConfig,
 } from "./domain/types.js";
+export { CONFIG_PATH, CONFIG_VERSION } from "./domain/types.js";
+export type {
+  GitChangeEvidence,
+  GitCommitEvidence,
+  GitDiffEvidence,
+  GitSnapshot,
+} from "./git/inspect.js";
+export { inspectGitProject } from "./git/inspect.js";
+export {
+  HANDOFF_SNAPSHOT_END,
+  HANDOFF_SNAPSHOT_START,
+  renderHandoffSnapshot,
+  upsertHandoffSnapshot,
+  validateHandoffSnapshotMarkers,
+} from "./handoff/snapshot-block.js";
+export {
+  PUBLIC_SCHEMA_PATH,
+  PUBLIC_SCHEMA_YAML_DIRECTIVE,
+  readPublicSchema,
+} from "./schema/public-schema.js";

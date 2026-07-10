@@ -1,7 +1,8 @@
+import { isAdapterType } from "../adapters/registry.js";
 import { assertPortableRelativePath, portablePathKey } from "../core/paths.js";
+import { hasUnsafeLineControl, isWellFormedUnicode } from "../core/text.js";
 import type {
   AdapterConfig,
-  AdapterType,
   ContextDocument,
   Diagnostic,
   LoadPolicy,
@@ -10,7 +11,6 @@ import type {
 import { CONFIG_VERSION } from "../domain/types.js";
 
 const ID_PATTERN = /^[a-z][a-z0-9-]*$/;
-const ADAPTER_TYPES = new Set<AdapterType>(["codex", "claude"]);
 const LOAD_POLICIES = new Set<LoadPolicy>(["always", "on-demand"]);
 const MAX_DOCUMENTS = 256;
 const MAX_ADAPTERS = 32;
@@ -161,16 +161,13 @@ function decodeDocuments(input: unknown, diagnostics: Diagnostic[]): ContextDocu
       description !== undefined &&
       triggers !== null
     ) {
-      const document: ContextDocument = {
+      const base = {
         id,
         path: documentPath,
         load: load as LoadPolicy,
         description,
       };
-      if (triggers !== undefined) {
-        document.triggers = triggers;
-      }
-      documents.push(document);
+      documents.push(triggers === undefined ? base : { ...base, triggers });
     }
   }
 
@@ -222,7 +219,7 @@ function decodeAdapters(input: unknown, diagnostics: Diagnostic[]): AdapterConfi
     }
     rejectUnknownKeys(item, ["type", "output"], location, diagnostics);
     const type = requiredString(item["type"], `${location}.type`, diagnostics);
-    if (type !== undefined && !ADAPTER_TYPES.has(type as AdapterType)) {
+    if (type !== undefined && !isAdapterType(type)) {
       diagnostics.push(
         error("E_ADAPTER_KIND", `Unsupported adapter type: ${type}`, `${location}.type`),
       );
@@ -231,8 +228,8 @@ function decodeAdapters(input: unknown, diagnostics: Diagnostic[]): AdapterConfi
     if (output !== undefined) {
       collectPathError(output, `${location}.output`, diagnostics);
     }
-    if (type !== undefined && ADAPTER_TYPES.has(type as AdapterType) && output !== undefined) {
-      adapters.push({ type: type as AdapterType, output });
+    if (type !== undefined && isAdapterType(type) && output !== undefined) {
+      adapters.push({ type, output });
     }
   }
 
@@ -310,12 +307,30 @@ function requiredString(
     diagnostics.push(error("E_REQUIRED_STRING", "Value must be a non-empty string.", location));
     return undefined;
   }
-  const value = input.trim();
-  if (constraints.singleLine === true && /[\r\n]/.test(value)) {
-    diagnostics.push(error("E_SINGLE_LINE", "Value must fit on one line.", location));
+  const value = input;
+  if (!isWellFormedUnicode(value)) {
+    diagnostics.push(
+      error("E_UNICODE", "Value must contain well-formed Unicode scalar values.", location),
+    );
     return undefined;
   }
-  if (constraints.maxLength !== undefined && value.length > constraints.maxLength) {
+  if (value !== value.trim()) {
+    diagnostics.push(
+      error(
+        "E_SURROUNDING_WHITESPACE",
+        "Value must not contain leading or trailing whitespace.",
+        location,
+      ),
+    );
+    return undefined;
+  }
+  if (constraints.singleLine === true && hasUnsafeLineControl(value)) {
+    diagnostics.push(
+      error("E_SINGLE_LINE", "Value must be one line without control characters.", location),
+    );
+    return undefined;
+  }
+  if (constraints.maxLength !== undefined && [...value].length > constraints.maxLength) {
     diagnostics.push(
       error(
         "E_STRING_LENGTH",

@@ -3,6 +3,7 @@
 import { createRequire } from "node:module";
 import type { ParseArgsOptionsConfig } from "node:util";
 import { parseArgs } from "node:util";
+import { refreshHandoff } from "./commands/handoff.js";
 import { initProject } from "./commands/init.js";
 import { syncProject } from "./commands/sync.js";
 import { validateProject } from "./commands/validate.js";
@@ -34,6 +35,8 @@ export async function main(argv: string[]): Promise<number> {
         return await runSync(commandArguments);
       case "validate":
         return await runValidate(commandArguments);
+      case "handoff":
+        return await runHandoff(commandArguments);
       case "help":
         process.stdout.write(`${helpText()}\n`);
         return EXIT_SUCCESS;
@@ -45,6 +48,36 @@ export async function main(argv: string[]): Promise<number> {
   } catch (error) {
     return reportError(error, jsonOutput);
   }
+}
+
+async function runHandoff(argv: string[]): Promise<number> {
+  const values = parseCommandArgs(argv, {
+    root: { type: "string", short: "r" },
+    refresh: { type: "boolean", default: false },
+    check: { type: "boolean", default: false },
+    "dry-run": { type: "boolean", default: false },
+    json: { type: "boolean", default: false },
+    help: { type: "boolean", short: "h", default: false },
+  });
+  if (values["help"] === true) {
+    process.stdout.write(`${handoffHelpText()}\n`);
+    return EXIT_SUCCESS;
+  }
+  const project = await loadProject(stringValue(values["root"]) ?? process.cwd());
+  const result = await refreshHandoff(project, {
+    check: values["check"] === true,
+    dryRun: values["dry-run"] === true,
+  });
+  if (values["json"] === true) {
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+  } else {
+    const symbol = result.kind === "update" ? "~" : "=";
+    process.stdout.write(`${symbol} ${result.path} (${result.kind})\n`);
+    process.stdout.write(
+      `${result.wrote ? "refreshed" : "checked"}: ${result.snapshot.changes.length + result.snapshot.omittedChanges} changed path(s), ${result.snapshot.recentCommits.length} recent commit(s).\n`,
+    );
+  }
+  return values["check"] === true && result.drift ? EXIT_ISSUES : EXIT_SUCCESS;
 }
 
 async function runInit(argv: string[]): Promise<number> {
@@ -223,8 +256,9 @@ Usage: ackit <command> [options]
 
 Commands:
   init       Create a canonical context layer and managed agent adapters
-  sync       Deterministically update managed adapter blocks
-  validate   Check schema, context budget, path safety, and adapter drift
+  sync       Deterministically update generated schema and adapter blocks
+  validate   Check schema, ownership, context safety, handoff, and adapter drift
+  handoff    Refresh deterministic Git evidence in the handoff document
 
 Run 'ackit <command> --help' for command-specific options.`;
 }
@@ -247,7 +281,7 @@ function syncHelpText(): string {
 Options:
   -r, --root <path>   Project root (default: current directory)
       --adopt         Append managed blocks to reviewed existing adapter files
-      --check         Exit 1 when generated adapters would change
+      --check         Exit 1 when generated artifacts would change
       --dry-run       Show changes without writing them
   -h, --help          Show this help`;
 }
@@ -258,6 +292,18 @@ function validateHelpText(): string {
 Options:
   -r, --root <path>   Project root (default: current directory)
       --json          Emit machine-readable diagnostics
+  -h, --help          Show this help`;
+}
+
+function handoffHelpText(): string {
+  return `Usage: ackit handoff [--refresh] [options]
+
+Options:
+  -r, --root <path>   Project root (default: current directory)
+      --refresh       Explicit alias for the default refresh behavior
+      --check         Exit 1 when repository evidence would change
+      --dry-run       Inspect and render without writing the handoff
+      --json          Emit the result and evidence as JSON
   -h, --help          Show this help`;
 }
 

@@ -3,7 +3,7 @@ import { upsertManagedBlock } from "../adapters/managed-block.js";
 import { renderAdapter } from "../adapters/render.js";
 import { decodeConfig } from "../config/decode.js";
 import { AckitError, issueError } from "../core/errors.js";
-import { atomicWriteText, readTextIfExists } from "../core/files.js";
+import { atomicWriteTexts, inspectAtomicPath, readTextIfExists } from "../core/files.js";
 import { assertNoSymlink, canonicalProjectRoot, resolveProjectPath } from "../core/paths.js";
 import type { AdapterType } from "../domain/types.js";
 import { createDefaultConfig, createTemplateFiles } from "../templates/defaults.js";
@@ -44,7 +44,12 @@ export async function initProject(options: InitOptions): Promise<InitResult> {
         "Move or reconcile the existing file before running init again.",
       );
     }
-    changes.push({ path: template.path, kind: "create", content: template.content });
+    changes.push({
+      path: template.path,
+      kind: "create",
+      content: template.content,
+      expectedContent: null,
+    });
   }
 
   const adapterDiagnostics = [];
@@ -60,6 +65,7 @@ export async function initProject(options: InitOptions): Promise<InitResult> {
         path: adapter.output,
         kind: existing === undefined ? "create" : existing === content ? "unchanged" : "update",
         content,
+        expectedContent: existing ?? null,
       });
     } catch (error) {
       if (error instanceof AckitError) {
@@ -78,11 +84,20 @@ export async function initProject(options: InitOptions): Promise<InitResult> {
   }
 
   if (!options.dryRun) {
-    for (const change of changes) {
-      if (change.kind !== "unchanged") {
-        await atomicWriteText(resolveProjectPath(root, change.path), change.content);
-      }
-    }
+    const writes = await Promise.all(
+      changes
+        .filter((change) => change.kind !== "unchanged")
+        .map(async (change) => {
+          const filePath = resolveProjectPath(root, change.path);
+          return {
+            filePath,
+            content: change.content,
+            expectedContent: change.expectedContent,
+            guard: await inspectAtomicPath(root, filePath),
+          };
+        }),
+    );
+    await atomicWriteTexts(writes);
   }
   return { changes, wrote: !options.dryRun };
 }

@@ -1,69 +1,58 @@
 # Roadmap
 
-Roadmap order is risk-driven. Dates are intentionally omitted until the alpha is exercised on real
-repositories.
+Roadmap order is risk-driven. Stable-release dates remain intentionally unset until the beta is
+exercised on external repositories.
 
-## 0.1 alpha — safe deterministic foundation
+## 0.1 beta — deterministic project memory and handoff
 
-Implemented:
+Implemented in `0.1.0-beta.0`:
 
-- versioned canonical configuration;
-- progressive always/on-demand document catalog;
-- Codex and Claude managed router adapters;
-- non-destructive init/adopt/sync behavior;
-- drift, budget, path, symlink, and source-overlap validation;
-- human and JSON CLI diagnostics;
-- cross-platform-oriented test matrix and coverage gates;
-- dogfooded project context, architecture, decisions, and handoff.
+- versioned canonical configuration with a public v1 JSON Schema and compatibility contract;
+- progressive always/on-demand context catalog with explicit budgets;
+- registry-backed Codex and Claude adapters with golden fixtures and non-destructive adoption;
+- normalized ownership, traversal, symlink, bounded-read, marker, and drift validation;
+- staged atomic file replacement with stale-plan detection and temporary cleanup;
+- deterministic Git handoff evidence: branch/HEAD, divergence, status, numstat, paths, commits;
+- hostile Git environment, process deadline/output, invalid filename, and fsmonitor controls;
+- human CLI contracts for every command and JSON contracts for `validate` and `handoff`;
+- deterministic fuzz/property, performance, adoption, package, and three-platform CI design;
+- exact clean-build npm artifact and local/ephemeral/global/ESM/TypeScript smoke paths.
 
-Remaining before tagging the alpha:
+Release blockers outside implementation:
 
-- choose an open-source license;
-- add public JSON Schema and schema documentation;
-- add Linux/macOS/Windows CI results;
-- install and smoke-test the packed tarball in a clean directory;
-- establish release signing/provenance and changelog workflow;
-- run adoption tests on at least three materially different real repositories.
+- select and record an open-source license;
+- bootstrap the first npm publication, then configure protected trusted publishing;
+- run the final tagged three-platform matrix and registry-install verification.
 
-## 0.2 alpha — verifiable handoff evidence
+## 0.2 beta — adapter breadth and measured continuity
 
-- `ackit handoff --refresh` managed Git snapshot;
-- branch, status, changed paths, bounded diff stat, and recent commit evidence;
-- preserve semantic handoff narrative outside the snapshot block;
-- handle detached HEAD, no commits, worktrees, submodules, unusual filenames, and missing Git;
-- no automatic commit, staging, or model call.
+- research-backed Cursor, GitHub Copilot, and Gemini CLI adapters;
+- nested instruction outputs only where official precedence behavior is documented;
+- opt-in measurement protocol for reconstruction time and handoff usefulness;
+- external adoption reports from at least three materially different repositories;
+- hard-link and Windows junction/reparse-point policy and tests.
 
-## 0.3 alpha — adapter framework
+## 0.3 beta — freshness and reversible compaction
 
-- formal adapter interface and golden conformance fixtures;
-- research-backed Cursor, GitHub Copilot, and Gemini CLI support;
-- nested instruction outputs where the target tool defines precedence;
-- compatibility metadata and adapter-specific validation.
-
-## 0.4 alpha — freshness and compaction
-
-- document freshness metadata tied to evidence rather than wall-clock age alone;
+- evidence-based document freshness metadata rather than wall-clock claims;
 - deterministic size reporting by load tier;
-- archive workflow with reversible moves and link integrity;
-- optional tokenizer plugins without making a model tokenizer a core dependency;
+- archive workflow with reversible moves and link validation;
+- optional tokenizer plugins without a core model dependency;
 - no destructive one-shot summarization.
 
-## Beta gate
+## Stable gate
 
-- configuration version migration contract;
-- documented backward compatibility window;
-- complete supported-platform CI and packaged binary smoke tests;
-- parser fuzzing and filesystem fault injection;
-- performance and memory budgets;
-- security review of path, Git, package, and future plugin boundaries;
-- real-project feedback showing that handoff reduces reconstruction work;
-- code review with no unresolved high-severity findings.
+- beta feedback shows reduced context reconstruction without instruction bloat;
+- configuration migration implementation exists before a v2 schema is introduced;
+- supported-platform package and registry paths remain green over multiple releases;
+- security review has no unresolved high-severity path, Git, package, or plugin findings;
+- release provenance and rollback/deprecation procedures have been exercised;
+- public API and CLI compatibility commitments are explicit.
 
 ## Post-beta exploration
 
-- agent skills that teach the maintenance protocol without duplicating project memory;
+- agent skills that teach maintenance protocol without duplicating project memory;
 - read-first MCP server for context queries and decision search;
 - optional issue-tracker connectors with explicit provenance;
 - team policies and dashboards that do not require uploading source context;
 - extensible adapter/plugin SDK after a safe trust model exists.
-

@@ -1,6 +1,6 @@
 {
   "name": "@jaemani/agent-context-kit",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0-beta.0",
   "description": "A local-first project memory and handoff layer for AI coding agents.",
   "type": "module",
   "main": "dist/index.js",
@@ -17,13 +17,25 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "schemas",
+    "docs",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "README.md",
+    "ROADMAP.md",
+    "SECURITY.md"
   ],
   "engines": {
     "node": ">=22.0.0"
   },
+  "publishConfig": {
+    "access": "public",
+    "tag": "beta",
+    "provenance": true
+  },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "clean": "node scripts/clean.mjs",
+    "build": "npm run clean && tsc -p tsconfig.json",
     "check": "tsc -p tsconfig.json --noEmit",
     "format": "biome check --write .",
     "format:check": "biome check .",
@@ -32,6 +44,7 @@
     "test:package": "npm run build && node scripts/package-smoke.mjs",
     "quality": "npm run format:check && npm run check && npm run test:coverage",
     "pack:check": "npm run build && node scripts/package-dry-run.mjs",
+    "release:verify": "npm run quality && node dist/cli.js sync --check && node dist/cli.js validate --json && npm run pack:check && node scripts/build-release-artifact.mjs && node scripts/package-smoke.mjs --release && npm audit --omit=dev",
     "prepack": "npm run build"
   },
   "dependencies": {
@@ -40,6 +53,7 @@
   "devDependencies": {
     "@biomejs/biome": "^2.2.4",
     "@types/node": "^22.18.0",
+    "ajv": "^8.20.0",
     "typescript": "^5.9.2"
   },
   "keywords": [

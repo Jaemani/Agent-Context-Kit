@@ -1,10 +1,11 @@
 import { stringify } from "yaml";
+import { getAdapterDefinition } from "../adapters/registry.js";
 import type { AdapterConfig, AdapterType, ProjectConfig } from "../domain/types.js";
-
-const ADAPTER_OUTPUTS: Record<AdapterType, string> = {
-  codex: "AGENTS.md",
-  claude: "CLAUDE.md",
-};
+import {
+  PUBLIC_SCHEMA_PATH,
+  PUBLIC_SCHEMA_YAML_DIRECTIVE,
+  readPublicSchema,
+} from "../schema/public-schema.js";
 
 export interface TemplateFile {
   path: string;
@@ -62,7 +63,9 @@ export function createDefaultConfig(name: string, adapterTypes: AdapterType[]): 
         triggers: ["editing code", "running checks", "preparing a pull request"],
       },
     ],
-    adapters: adapterTypes.map((type): AdapterConfig => ({ type, output: ADAPTER_OUTPUTS[type] })),
+    adapters: adapterTypes.map(
+      (type): AdapterConfig => ({ type, output: getAdapterDefinition(type).defaultOutput }),
+    ),
     policies: {
       maxAlwaysCharacters: 16_000,
       maxAdapterCharacters: 12_000,
@@ -75,7 +78,13 @@ export function createTemplateFiles(config: ProjectConfig): TemplateFile[] {
   return [
     {
       path: ".agent-context/config.yaml",
-      content: serializedConfig.endsWith("\n") ? serializedConfig : `${serializedConfig}\n`,
+      content: `${PUBLIC_SCHEMA_YAML_DIRECTIVE}\n${
+        serializedConfig.endsWith("\n") ? serializedConfig : `${serializedConfig}\n`
+      }`,
+    },
+    {
+      path: PUBLIC_SCHEMA_PATH,
+      content: readPublicSchema(),
     },
     {
       path: ".agent-context/instructions.md",

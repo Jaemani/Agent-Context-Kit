@@ -2,7 +2,8 @@
 
 ## Supported versions
 
-No production-supported release exists yet. Security fixes currently target the latest alpha branch.
+No stable production release exists yet. Security fixes target the latest published beta when one
+exists and the current `main` branch.
 
 ## Reporting
 
@@ -27,4 +28,3 @@ High-priority reports include:
 
 The design assumptions and known residual risks are documented in
 [the threat model](docs/threat-model.md).
-

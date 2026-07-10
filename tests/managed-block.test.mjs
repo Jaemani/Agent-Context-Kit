@@ -38,6 +38,17 @@ test("refuses an unmanaged existing file by default", () => {
   );
 });
 
+test("inline marker mentions stay human content and generated bodies cannot inject ownership", () => {
+  const existing = `# Human rules\n\nMention ${MANAGED_START} inline.\n`;
+  const adopted = upsertManagedBlock(existing, "generated", { adopt: true });
+  assert.match(adopted, /Mention .*managed:start.* inline/);
+  assert.equal(hasManagedBlock(existing), false);
+  assert.throws(
+    () => upsertManagedBlock(undefined, MANAGED_START, { adopt: false }),
+    (error) => error.code === "E_MANAGED_BODY_MARKER",
+  );
+});
+
 test("preserves CRLF in an adopted or updated file", () => {
   const adopted = upsertManagedBlock("# Human\r\n", "one\ntwo", { adopt: true });
   assert.equal(adopted.includes(`${MANAGED_START}\r\none\r\ntwo\r\n${MANAGED_END}`), true);

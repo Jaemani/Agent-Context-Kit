@@ -1,9 +1,11 @@
 import { upsertManagedBlock } from "../adapters/managed-block.js";
 import { renderAdapter } from "../adapters/render.js";
+import { assertLoadedProjectSnapshot } from "../config/load.js";
 import { AckitError } from "../core/errors.js";
-import { atomicWriteText, readTextIfExists } from "../core/files.js";
+import { atomicWriteTexts, inspectAtomicPath, readTextIfExists } from "../core/files.js";
 import { assertNoSymlink, resolveProjectPath } from "../core/paths.js";
 import type { Diagnostic, LoadedProject } from "../domain/types.js";
+import { PUBLIC_SCHEMA_PATH, readPublicSchema } from "../schema/public-schema.js";
 import { validateContext } from "../validation/validate.js";
 
 export type ChangeKind = "create" | "update" | "unchanged";
@@ -12,6 +14,7 @@ export interface PlannedChange {
   path: string;
   kind: ChangeKind;
   content: string;
+  expectedContent: string | null;
 }
 
 export interface SyncOptions {
@@ -31,6 +34,7 @@ export async function syncProject(
   project: LoadedProject,
   options: SyncOptions,
 ): Promise<SyncResult> {
+  await assertLoadedProjectSnapshot(project);
   const diagnostics = await validateContext(project);
   const errors = diagnostics.filter((diagnostic) => diagnostic.level === "error");
   if (errors.length > 0) {
@@ -39,20 +43,52 @@ export async function syncProject(
     });
   }
 
-  const changes = await planAdapterChanges(project, options.adopt);
+  const changes = [
+    await planPublicSchemaChange(project),
+    ...(await planAdapterChanges(project, options.adopt)),
+  ];
   const drift = changes.some((change) => change.kind !== "unchanged");
   const shouldWrite = drift && !options.check && !options.dryRun;
 
   if (shouldWrite) {
-    for (const change of changes) {
-      if (change.kind !== "unchanged") {
-        const absolutePath = resolveProjectPath(project.root, change.path);
-        await atomicWriteText(absolutePath, change.content);
-      }
-    }
+    const writes = await Promise.all(
+      changes
+        .filter((change) => change.kind !== "unchanged")
+        .map(async (change) => {
+          const absolutePath = resolveProjectPath(project.root, change.path);
+          return {
+            filePath: absolutePath,
+            content: change.content,
+            expectedContent: change.expectedContent,
+            guard: await inspectAtomicPath(project.root, absolutePath),
+          };
+        }),
+    );
+    await atomicWriteTexts(writes, {
+      preconditions: [
+        {
+          filePath: project.configPath,
+          expectedContent: project.configSource,
+          guard: await inspectAtomicPath(project.root, project.configPath),
+        },
+      ],
+    });
   }
 
   return { changes, diagnostics, wrote: shouldWrite, drift };
+}
+
+export async function planPublicSchemaChange(project: LoadedProject): Promise<PlannedChange> {
+  const absolutePath = resolveProjectPath(project.root, PUBLIC_SCHEMA_PATH);
+  await assertNoSymlink(project.root, absolutePath);
+  const existing = await readTextIfExists(absolutePath, { maxBytes: 1024 * 1024 });
+  const content = readPublicSchema();
+  return {
+    path: PUBLIC_SCHEMA_PATH,
+    kind: existing === undefined ? "create" : existing === content ? "unchanged" : "update",
+    content,
+    expectedContent: existing ?? null,
+  };
 }
 
 export async function planAdapterChanges(
@@ -74,6 +110,7 @@ export async function planAdapterChanges(
         path: adapter.output,
         kind: existing === undefined ? "create" : existing === content ? "unchanged" : "update",
         content,
+        expectedContent: existing ?? null,
       });
     } catch (error) {
       if (error instanceof AckitError) {

@@ -1,13 +1,25 @@
 import path from "node:path";
-import { MANAGED_END, MANAGED_START, upsertManagedBlock } from "../adapters/managed-block.js";
+import { hasAnyManagedMarker, upsertManagedBlock } from "../adapters/managed-block.js";
 import { renderAdapter } from "../adapters/render.js";
 import { AckitError } from "../core/errors.js";
 import { readTextIfExists } from "../core/files.js";
-import { assertNoSymlink, portablePathKey, resolveProjectPath } from "../core/paths.js";
+import { assertNoSymlink, resolveProjectPath } from "../core/paths.js";
 import type { Diagnostic, LoadedProject } from "../domain/types.js";
+import { validateHandoffSnapshotMarkers } from "../handoff/snapshot-block.js";
+import {
+  PUBLIC_SCHEMA_PATH,
+  PUBLIC_SCHEMA_YAML_DIRECTIVE,
+  readPublicSchema,
+} from "../schema/public-schema.js";
+import { validateManagedPathOwnership } from "./path-ownership.js";
 
-export async function validateContext(project: LoadedProject): Promise<Diagnostic[]> {
-  const diagnostics: Diagnostic[] = [];
+const MAX_CONTEXT_DOCUMENT_BYTES = 1024 * 1024;
+
+export async function validateContext(
+  project: LoadedProject,
+  contentOverrides: ReadonlyMap<string, string> = new Map(),
+): Promise<Diagnostic[]> {
+  const diagnostics: Diagnostic[] = [...validateManagedPathOwnership(project)];
   let alwaysCharacters = 0;
 
   for (const document of project.config.documents) {
@@ -15,7 +27,19 @@ export async function validateContext(project: LoadedProject): Promise<Diagnosti
     const absolutePath = resolveProjectPath(project.root, portablePath);
     try {
       await assertNoSymlink(project.root, absolutePath);
-      const content = await readTextIfExists(absolutePath, { maxBytes: 1024 * 1024 });
+      const overriddenContent = contentOverrides.get(portablePath);
+      if (
+        overriddenContent !== undefined &&
+        Buffer.byteLength(overriddenContent, "utf8") > MAX_CONTEXT_DOCUMENT_BYTES
+      ) {
+        throw new AckitError(
+          "E_FILE_TOO_LARGE",
+          `Text file exceeds the ${MAX_CONTEXT_DOCUMENT_BYTES}-byte safety limit: ${portablePath}`,
+        );
+      }
+      const content =
+        overriddenContent ??
+        (await readTextIfExists(absolutePath, { maxBytes: MAX_CONTEXT_DOCUMENT_BYTES }));
       if (content === undefined) {
         diagnostics.push({
           level: "error",
@@ -32,6 +56,9 @@ export async function validateContext(project: LoadedProject): Promise<Diagnosti
           message: `Context document is empty: ${portablePath}`,
           path: portablePath,
         });
+      }
+      if (document.id === "handoff") {
+        validateHandoffSnapshotMarkers(content);
       }
       if (document.load === "always") {
         alwaysCharacters += content.length;
@@ -51,21 +78,7 @@ export async function validateContext(project: LoadedProject): Promise<Diagnosti
     });
   }
 
-  const sourcePaths = new Set([
-    portablePathKey(".agent-context/config.yaml"),
-    ...project.config.documents.map((document) =>
-      portablePathKey(path.posix.join(".agent-context", document.path)),
-    ),
-  ]);
   for (const adapter of project.config.adapters) {
-    if (sourcePaths.has(portablePathKey(adapter.output))) {
-      diagnostics.push({
-        level: "error",
-        code: "E_OUTPUT_OVERLAPS_SOURCE",
-        message: `Adapter output overlaps a canonical context source: ${adapter.output}`,
-        path: adapter.output,
-      });
-    }
     const renderedLength = renderAdapter(project.config, adapter).length;
     if (renderedLength > project.config.policies.maxAdapterCharacters) {
       diagnostics.push({
@@ -98,7 +111,7 @@ export async function validateAdapters(project: LoadedProject): Promise<Diagnost
         });
         continue;
       }
-      if (!existing.includes(MANAGED_START) && !existing.includes(MANAGED_END)) {
+      if (!hasAnyManagedMarker(existing)) {
         diagnostics.push({
           level: "error",
           code: "E_ADAPTER_UNMANAGED",
@@ -125,6 +138,59 @@ export async function validateAdapters(project: LoadedProject): Promise<Diagnost
     }
   }
   return diagnostics;
+}
+
+export async function validatePublicSchema(project: LoadedProject): Promise<Diagnostic[]> {
+  const absolutePath = resolveProjectPath(project.root, PUBLIC_SCHEMA_PATH);
+  try {
+    await assertNoSymlink(project.root, absolutePath);
+    const existing = await readTextIfExists(absolutePath, { maxBytes: 1024 * 1024 });
+    if (existing === undefined) {
+      return [
+        {
+          level: "error",
+          code: "E_SCHEMA_MISSING",
+          message: `Generated configuration schema is missing: ${PUBLIC_SCHEMA_PATH}`,
+          path: PUBLIC_SCHEMA_PATH,
+          hint: "Run 'ackit sync'.",
+        },
+      ];
+    }
+    if (existing !== readPublicSchema()) {
+      return [
+        {
+          level: "error",
+          code: "E_SCHEMA_DRIFT",
+          message: `Generated configuration schema is out of date: ${PUBLIC_SCHEMA_PATH}`,
+          path: PUBLIC_SCHEMA_PATH,
+          hint: "Run 'ackit sync'.",
+        },
+      ];
+    }
+    return [];
+  } catch (error) {
+    return [asDiagnostic(error, PUBLIC_SCHEMA_PATH)];
+  }
+}
+
+export async function validateConfigSchemaDirective(project: LoadedProject): Promise<Diagnostic[]> {
+  try {
+    const source = await readTextIfExists(project.configPath, { maxBytes: 1024 * 1024 });
+    if (source === undefined || source.split(/\r?\n/, 1)[0] !== PUBLIC_SCHEMA_YAML_DIRECTIVE) {
+      return [
+        {
+          level: "warning",
+          code: "W_CONFIG_SCHEMA_HEADER",
+          message: "Configuration is not linked to the bundled JSON Schema for editor validation.",
+          path: ".agent-context/config.yaml",
+          hint: `Add '${PUBLIC_SCHEMA_YAML_DIRECTIVE}' as the first line without changing the YAML data.`,
+        },
+      ];
+    }
+    return [];
+  } catch (error) {
+    return [asDiagnostic(error, ".agent-context/config.yaml")];
+  }
 }
 
 function asDiagnostic(error: unknown, diagnosticPath: string): Diagnostic {

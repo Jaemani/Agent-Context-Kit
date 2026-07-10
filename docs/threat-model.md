@@ -23,9 +23,9 @@ the normal npm supply-chain boundary.
 | Threat | Current control |
 | --- | --- |
 | `../` or absolute-path writes | Portable relative-path validation plus root containment check |
-| Symlink read/write escape | Reject every existing symbolic-link component on managed paths |
+| Symlink or parent-substitution write escape | Reject links; guard existing directory device/inode identity; recheck physical containment and parent identity before staging and rename |
 | Windows-specific path aliasing | Reserved-name/character validation and normalized separators |
-| Case or Unicode path collision | NFC normalization plus case-folded duplicate comparison |
+| Case or Unicode path collision | Conservative NFKC plus multi-step case-normalized comparison |
 | YAML duplicate keys or alias expansion | Strict parsing, unique keys, bounded alias expansion |
 | Existing instruction loss | Refuse unmarked files unless `--adopt`; replace only marked content |
 | Partial update after another adapter is invalid | Plan and validate all adapters before writing |
@@ -33,17 +33,28 @@ the normal npm supply-chain boundary.
 | Prompt-router marker injection through metadata | Single-line bounded metadata and reserved-marker rejection |
 | Oversized startup context | Configured hard budget over actual always-loaded characters |
 | Oversized/binary config or context | Bounded reads, catalog limits, router budget, strict UTF-8 |
+| Generated/source path alias | One conservative compatibility/case-normalized ownership graph including copied schema |
+| Concurrent human edit or stale loaded config | Exact bounded config re-read at command entry plus expected-content checks before each remaining rename |
+| Git repository redirection | Remove inherited repository-selection `GIT_*` variables |
+| Git fsmonitor code execution | Force `core.fsmonitor=false` on every Git subcommand |
+| Git process/resource abuse | No shell, no prompts, deadline with KILL escalation, combined 1 MiB output |
+| Malicious Git filenames | NUL-delimited Buffer parsing, reversible invalid-UTF-8 hex, and escaped invisible Unicode evidence |
+| Mixed-time Git evidence | Two exact observations per attempt, three bounded retries, then fail closed |
+| Handoff context inflation | 200-path rendering cap plus prospective file/context-budget validation |
 
 ## Residual risks
 
-- Multi-file synchronization is not atomic across process termination, disk-full events, network
-  filesystems, or operating-system faults after preflight.
+- Multi-file writes stage all temporary content before rename, but sequential commit is not atomic
+  across process termination, filesystem faults, or races during rename.
 - A repository owner can intentionally place harmful instructions in canonical Markdown; this tool
   validates structure, not truth or intent.
-- A hard link is not currently detected as an escape. Normal repository tools rarely create managed
-  files as hard links, but inode/link-count checks should be evaluated before beta.
-- Files can change between validation and rename (TOCTOU). Preventing this fully requires stronger
-  platform-specific filesystem primitives and remains an open design issue.
+- A hard link is not rejected. Replacement-by-rename does not mutate the linked inode, but reads can
+  still observe linked content and inode/link-count policy remains a future hardening option.
+- Parent/content/temporary identity checks narrow but do not eliminate the TOCTOU interval between a
+  final check and path-based `mkdir`, temporary creation, or rename. Portable Node APIs do not expose
+  directory-descriptor `openat`/`renameat` or atomic compare-and-swap replacement. A detected swap
+  prevents managed content commit, but a raced path-based `mkdir` can have an external directory side
+  effect before its postcondition fails.
 - Character count is not a tokenizer and cannot predict every model's context cost.
 - npm lifecycle and dependency compromise are outside runtime path controls. The project currently
   uses one runtime dependency and a committed lockfile to reduce exposure.
@@ -52,7 +63,8 @@ the normal npm supply-chain boundary.
 
 ## Security principles for future features
 
-- Git inspection must use direct process argument arrays, bounded output, timeouts, and no shell.
+- Git inspection must retain direct argument arrays, sanitized environment, disabled executable
+  config, combined output limits, timeouts, and no shell.
 - Handoff generation must never stage or commit files automatically.
 - Compaction must keep recoverable history and must not overwrite source material without explicit
   review.
@@ -62,9 +74,8 @@ the normal npm supply-chain boundary.
 
 ## Security test backlog
 
-- Property/fuzz testing for config and managed-marker parsers.
 - Hard-link behavior on supported local filesystems.
-- Race and failure injection around temporary write, permission copy, and rename.
+- Deterministic injection at the exact rename/permission syscalls beyond behavioral fault fixtures.
 - Very deep paths, long filenames, large YAML, and large Markdown limits.
-- Windows junctions and reparse points in the CI security matrix.
-- Malicious Git filenames when handoff snapshots are introduced.
+- Additional Windows reparse-point variants beyond the directory-junction regression.
+- Submodule helper execution and additional executable Git configuration beyond fsmonitor.

@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
+import { promisify } from "node:util";
 import { createTemporaryDirectory, removeTemporaryDirectory } from "./helpers.mjs";
 
 const cli = path.resolve("dist/cli.js");
+const execFileAsync = promisify(execFile);
 
 async function runCli(arguments_) {
   return await new Promise((resolve, reject) => {
@@ -32,7 +34,7 @@ test("help and version are available without a project", async () => {
   assert.match(help.stdout, /Usage: ackit/);
   const version = await runCli(["--version"]);
   assert.equal(version.code, 0);
-  assert.match(version.stdout, /^0\.1\.0-alpha\.0/);
+  assert.match(version.stdout, /^0\.1\.0-beta\.0/);
 });
 
 test("unknown commands and invalid adapters use the usage exit code", async () => {
@@ -52,7 +54,7 @@ test("CLI lifecycle returns stable status codes and JSON diagnostics", async () 
   try {
     const initialized = await runCli(["init", "--root", root]);
     assert.equal(initialized.code, 0);
-    assert.match(initialized.stdout, /initialized: 10 change/);
+    assert.match(initialized.stdout, /initialized: 11 change/);
 
     const valid = await runCli(["validate", "--root", root, "--json"]);
     assert.equal(valid.code, 0);
@@ -81,6 +83,45 @@ test("configuration failures are machine-readable", async () => {
     const payload = JSON.parse(result.stderr);
     assert.equal(payload.ok, false);
     assert.equal(payload.code, "E_CONFIG_MISSING");
+  } finally {
+    await removeTemporaryDirectory(root);
+  }
+});
+
+test("CLI handoff refresh, check, dry-run, and JSON form one stable lifecycle", async () => {
+  const root = await createTemporaryDirectory();
+  try {
+    assert.equal((await runCli(["init", "--root", root])).code, 0);
+    const git = async (...arguments_) =>
+      await execFileAsync("git", arguments_, {
+        cwd: root,
+        env: { ...process.env, GIT_OPTIONAL_LOCKS: "0", LC_ALL: "C" },
+      });
+    await git("init", "-b", "main");
+    await git("config", "user.email", "ackit-tests@example.invalid");
+    await git("config", "user.name", "Agent Context Kit Tests");
+    await git("add", ".");
+    await git("commit", "-m", "CLI handoff fixture");
+
+    const handoffPath = path.join(root, ".agent-context", "handoff.md");
+    const before = await readFile(handoffPath, "utf8");
+    const dryRun = await runCli(["handoff", "--root", root, "--dry-run", "--json"]);
+    assert.equal(dryRun.code, 0);
+    assert.equal(JSON.parse(dryRun.stdout).wrote, false);
+    assert.equal(await readFile(handoffPath, "utf8"), before);
+
+    const stale = await runCli(["handoff", "--root", root, "--check", "--json"]);
+    assert.equal(stale.code, 1);
+    assert.equal(JSON.parse(stale.stdout).drift, true);
+
+    const refreshed = await runCli(["handoff", "--root", root, "--refresh", "--json"]);
+    assert.equal(refreshed.code, 0);
+    assert.equal(JSON.parse(refreshed.stdout).wrote, true);
+    assert.match(await readFile(handoffPath, "utf8"), /CLI handoff fixture/);
+
+    const current = await runCli(["handoff", "--root", root, "--check"]);
+    assert.equal(current.code, 0);
+    assert.match(current.stdout, /unchanged/);
   } finally {
     await removeTemporaryDirectory(root);
   }

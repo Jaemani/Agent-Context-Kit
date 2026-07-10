@@ -8,9 +8,10 @@ Agent Context Kit changes must preserve user-authored project memory and cross-p
 npm ci
 npm run quality
 npm run pack:check
+npm run test:package
 ```
 
-Node.js 22 or 24 is the supported development range for the alpha.
+Node.js 22 or 24 is the supported development range for the beta.
 
 ## Change expectations
 
@@ -31,8 +32,11 @@ Node.js 22 or 24 is the supported development range for the alpha.
 - Tests cover allowed, rejected, repeated, and failure states.
 - User-facing docs and CLI help match actual behavior.
 - `npm run quality` and `npm run pack:check` pass.
+- Package install modes, ESM, and TypeScript declarations pass through `npm run test:package`.
 - Generated adapters are current (`node dist/cli.js sync --check`).
 
 Large beta changes require an explicit review pass recorded in the handoff or pull request. Review
 findings should be ranked by severity and resolved or accepted with rationale.
 
+Maintainers follow [the release process](docs/releasing.md). Contributors must not publish local
+working-tree artifacts or add registry tokens to repository configuration.

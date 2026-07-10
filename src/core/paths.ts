@@ -1,10 +1,12 @@
 import { lstat, realpath, stat } from "node:fs/promises";
 import path from "node:path";
 import { issueError } from "./errors.js";
+import { hasUnsafeLineControl, isWellFormedUnicode } from "./text.js";
 
 const WINDOWS_ABSOLUTE_PATH = /^[A-Za-z]:[\\/]/;
-const WINDOWS_RESERVED_NAME = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i;
+const WINDOWS_RESERVED_NAME = /^(con|prn|aux|nul|com[1-9¹²³]|lpt[1-9¹²³])(?:\.|$)/i;
 const WINDOWS_INVALID_CHARACTERS = /[<>:"|?*]/;
+export const MAX_PORTABLE_PATH_CHARACTERS = 1024;
 
 export function resolveProjectPath(root: string, portablePath: string): string {
   assertPortableRelativePath(portablePath);
@@ -30,6 +32,15 @@ export function assertPortableRelativePath(portablePath: string): void {
   if (portablePath.includes("\0")) {
     throw issueError("E_PATH_NUL", "Paths must not contain NUL bytes.");
   }
+  if (!isWellFormedUnicode(portablePath)) {
+    throw issueError("E_UNICODE", "Paths must contain well-formed Unicode scalar values.");
+  }
+  if ([...portablePath].length > MAX_PORTABLE_PATH_CHARACTERS) {
+    throw issueError(
+      "E_PATH_LENGTH",
+      `Paths must not exceed ${MAX_PORTABLE_PATH_CHARACTERS} Unicode characters.`,
+    );
+  }
   if (portablePath.includes("\\")) {
     throw issueError(
       "E_PATH_PORTABILITY",
@@ -50,7 +61,7 @@ export function assertPortableRelativePath(portablePath: string): void {
   const nonPortableSegment = segments.find(
     (segment) =>
       WINDOWS_INVALID_CHARACTERS.test(segment) ||
-      [...segment].some((character) => character.charCodeAt(0) <= 0x1f) ||
+      hasUnsafeLineControl(segment) ||
       WINDOWS_RESERVED_NAME.test(segment) ||
       segment.endsWith(".") ||
       segment.endsWith(" "),
@@ -64,7 +75,11 @@ export function assertPortableRelativePath(portablePath: string): void {
 }
 
 export function portablePathKey(portablePath: string): string {
-  return portablePath.normalize("NFC").toLowerCase();
+  return conservativePortableCaseFold(portablePath);
+}
+
+function conservativePortableCaseFold(value: string): string {
+  return value.normalize("NFKC").toLowerCase().toUpperCase().toLowerCase().normalize("NFKC");
 }
 
 export async function canonicalProjectRoot(rootInput: string): Promise<string> {

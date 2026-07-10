@@ -1,0 +1,86 @@
+name: Release npm beta
+
+on:
+  push:
+    tags:
+      - "v*-beta.*"
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  preflight:
+    name: Release preflight on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-15
+          - windows-latest
+
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Run beta quality and package gates
+        run: |
+          npm run quality
+          node dist/cli.js sync --check
+          node dist/cli.js validate --json
+          npm run test:package
+
+  publish:
+    name: Publish reviewed beta artifact
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: npm
+    needs: preflight
+
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up release Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: 24.15.0
+          cache: npm
+
+      - name: Pin trusted-publishing npm client
+        run: npm install --global npm@12.0.0
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Build and verify one release artifact
+        run: npm run release:verify
+
+      - name: Configure one-time bootstrap token when present
+        shell: bash
+        run: |
+          if [[ -n "$NODE_AUTH_TOKEN" ]]; then
+            npm config set //registry.npmjs.org/:_authToken "$NODE_AUTH_TOKEN" --location=user
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish the verified tarball
+        run: npm publish release/*.tgz --access public --tag beta --provenance
+
+      - name: Verify registry installation and beta tag
+        run: node scripts/verify-published.mjs

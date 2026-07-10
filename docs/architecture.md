@@ -12,7 +12,7 @@ model dependency.
 CLI parsing and reporting
           |
           v
-application commands: init / sync / validate
+application commands: init / sync / validate / handoff
           |
           +--------------------+
           v                    v
@@ -43,8 +43,11 @@ Exit codes are part of the automation contract:
 - `init` constructs a complete write plan, detects canonical and adapter conflicts, and writes only
   after preflight succeeds.
 - `sync` validates canonical inputs, plans every adapter, and then atomically replaces changed files
-  one by one.
-- `validate` combines canonical context checks with generated adapter inspection and never writes.
+  plus the copied public schema.
+- `validate` combines canonical context, schema, ownership, handoff-marker, and adapter inspection and
+  never writes.
+- `handoff` gathers bounded Git evidence, replaces only its evidence block, and prospectively
+  validates the result before writing.
 
 These commands accept resolved domain objects where practical so tests can exercise behavior without
 shell parsing.
@@ -61,14 +64,17 @@ Version 1 has four concepts:
 - adapter type and output;
 - separate always-loaded document and generated-adapter character budgets.
 
-Published schema changes will require an explicit migration command before beta. Silent reinterpretation
-of old config is not acceptable.
+The public v1 JSON Schema covers structural constraints. Runtime decoding and validation add
+filesystem and cross-entry semantics. Their compatibility relationship and future migration policy
+are frozen in [ADR-0005](decisions/0005-configuration-v1-compatibility.md); silent reinterpretation is
+not acceptable.
 
 ### Adapter compiler
 
 Adapters render a concise router from the document catalog; they do not copy the complete documents.
-Codex and Claude currently share semantic content but have separate adapter identities, allowing
-future tool-specific behavior without changing the source model.
+Codex and Claude currently share semantic content but have separate registry identities and reviewed
+golden fixtures, allowing future tool-specific behavior without changing the source model. The exact
+supported discovery surface is documented in [adapter compatibility](adapter-compatibility.md).
 
 Generated content lives between one start and one end marker. Synchronization replaces only that
 region. A pre-existing unmarked file requires `--adopt`; malformed or duplicate markers fail closed.
@@ -79,27 +85,35 @@ All configured paths:
 
 1. must be normalized, relative, and use `/` separators;
 2. reject Windows-reserved names and characters even on Unix;
-3. are compared after Unicode NFC normalization and case folding;
+3. are compared with conservative Unicode compatibility and multi-step case normalization;
 4. resolve lexically inside the project root;
 5. reject any existing symbolic-link component.
 
 Project roots are canonicalized through the operating system before discovery or initialization.
-Config, document, and existing adapter reads are bounded and require valid UTF-8. Catalog counts and
+All config, document, copied-schema, and adapter paths enter one normalized ownership graph. Config,
+document, and existing adapter reads are bounded and require valid UTF-8. Catalog counts and
 rendered adapter size are also bounded so progressive disclosure cannot be bypassed by an oversized
 router.
 
-Writes use a uniquely named sibling temporary file and rename it into place, preserving existing
-permissions. This makes each file replacement atomic on supported local filesystems. The system
-preflights all adapter writes, but it does not claim a distributed transaction across files or
-network filesystems.
+Writes carry an inspected guard for the canonical root, existing directory device/inode identities,
+and missing parent paths. The batch rechecks every guard before staging, verifies physical containment
+and parent identity immediately before temporary creation and every rename, and verifies the temporary
+file identity before commit. Expected output and exact configuration source content are rechecked
+before each remaining rename. Cleanup follows a temporary path only while its parent identity is still
+trusted. These controls prevent common parent-substitution, stale-plan, and torn-file failures.
+
+Sequential renames are not an operating-system transaction; a race or OS failure during commit can
+still leave a cross-file batch partially applied. Portable Node.js also lacks directory-descriptor
+`openat`/`renameat`, so a final check-to-syscall window remains. ADR-0007 defines this boundary.
 
 ## Dependency direction
 
 ```text
 cli -> commands -> config/domain, adapters, validation, core
-validation -> adapters, core, domain
-adapters -> domain, core errors
+validation -> adapters, handoff, schema, core, domain
+adapters -> registry, domain, core errors
 config -> domain, core paths/errors
+handoff/git -> core, domain
 core -> Node.js standard library only
 ```
 
@@ -120,9 +134,11 @@ An adapter should be added only after documenting:
 
 ### Handoff snapshot
 
-A planned command will collect deterministic Git evidence—branch, status, changed paths, diff stat,
-and recent commits—into a separate managed snapshot inside `handoff.md`. Semantic narrative remains
-human/agent-authored and reviewable. Git commands will use argument arrays rather than a shell.
+The implemented handoff command collects deterministic Git evidence—branch, status, project-relative
+changed paths, staged/unstaged diff stat, upstream divergence, and recent commits—inside a separate
+managed block. Two exact observations must agree; otherwise collection retries three times and then
+fails closed. Semantic narrative remains human/agent-authored. Process and trust boundaries are
+defined in [ADR-0006](decisions/0006-deterministic-git-handoff-evidence.md).
 
 ### Skills and MCP
 
@@ -132,9 +148,10 @@ way to access project state; Markdown and CLI behavior remain the portable basel
 
 ## Known architectural gaps
 
-- No public JSON Schema or configuration migration mechanism yet.
-- No adapter conformance fixtures based on tool-version behavior yet.
-- No failure-injection abstraction for mid-write operating-system errors.
+- No migration implementation exists because v1 is the only configuration version.
+- Adapter conformance is documentation/golden-fixture based; authenticated tool launch is not in CI.
+- Sequential rename commit still cannot provide a portable cross-file transaction, and standard
+  Node.js cannot eliminate the final directory check-to-path-syscall interval.
 - Character budgets are deterministic but only approximate model tokens.
 - Semantic code-to-document freshness cannot be proven by the current validator.
 - Repository-root discovery does not yet account for multiple nested context roots beyond choosing

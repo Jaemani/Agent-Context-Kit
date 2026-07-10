@@ -2,23 +2,18 @@
 
 One repo-native project memory layer for AI coding agents.
 
-Agent Context Kit keeps durable project intent, current state, and handoff information in one
-canonical directory, then compiles small tool-specific routers for Codex, Claude Code, and future
-adapters. Switching agents should not require rewriting the same project explanation.
+Agent Context Kit keeps durable project intent, current state, decisions, and handoff narrative in one
+canonical directory. It compiles small instruction-file adapters for Codex and Claude Code and adds
+bounded Git evidence without copying the full memory into every tool file.
 
-> Status: `0.1.0-alpha.0`. The safety-oriented `init`, `sync`, and `validate` foundation works, but
-> the configuration schema and adapter set are not yet stable enough for a production beta.
+> Status: `0.1.0-beta.0` release candidate. The package is configured as
+> `@jaemani/agent-context-kit` with the npm `beta` dist-tag, but registry publication is intentionally
+> blocked until the repository owner selects an open-source license.
 
 ## Why this exists
 
-AI coding tools have separate instruction files and memory behavior. Copying project context into
-each file creates three recurring failures:
-
-- the copies drift;
-- long always-loaded files waste context and can reduce task quality;
-- session state disappears or becomes an unverified narrative.
-
-Agent Context Kit treats those tool files as adapters, not sources of truth:
+AI coding tools use different instruction files and session memory. Maintaining complete project
+explanations in each one creates drift, wastes context, and loses continuity when tools change.
 
 ```text
 .agent-context/ (canonical, human-reviewable memory)
@@ -33,39 +28,39 @@ Agent Context Kit treats those tool files as adapters, not sources of truth:
             Codex              Claude Code
 ```
 
-## Design commitments
+The adapters are routers. Stable purpose, architecture, current state, decisions, and the handoff
+remain reviewable Markdown sources in the repository.
 
-- **Local-first:** normal operation reads and writes only inside the repository.
-- **Progressive disclosure:** a small set of documents loads at startup; task-specific references
-  remain on demand.
-- **Non-destructive adoption:** existing agent files are never overwritten silently.
-- **Deterministic output:** the same config produces the same managed adapter block.
-- **Reviewable state:** Markdown remains the durable format; generated content is visibly marked.
-- **Fail closed:** malformed config, path escape, symlink traversal, drift, and context budget
-  violations produce actionable failures.
-- **No hidden model dependency:** the core compiler does not need an API key or LLM.
+## Installation
 
-The project deliberately does not try to become a full software-development methodology, an agent
-orchestrator, or a replacement for issue trackers and architecture records.
+Node.js 22 or newer is required. Once the beta is published, choose one installation model.
 
-## What works now
+One-off use without a persistent global command:
 
-| Capability | Alpha status |
-| --- | --- |
-| Canonical `.agent-context/` structure | Implemented |
-| Codex `AGENTS.md` adapter | Implemented |
-| Claude Code `CLAUDE.md` adapter | Implemented |
-| Safe adoption of existing adapter files | Implemented with explicit `--adopt` |
-| Config and path validation | Implemented |
-| Always-loaded context budget | Implemented as a deterministic character budget |
-| Adapter drift detection for CI | Implemented with `sync --check` and `validate` |
-| Cursor, Copilot, Gemini CLI adapters | Planned after adapter conformance research |
-| Git-aware handoff snapshot | Planned |
-| Compaction, skills, and MCP | Planned after the file and schema contracts stabilize |
+```bash
+npx --yes @jaemani/agent-context-kit@beta init
+npx --yes @jaemani/agent-context-kit@beta validate
+```
 
-## Try it from source
+Persistent global CLI:
 
-Requirements: Node.js 22 or newer and npm.
+```bash
+npm install --global @jaemani/agent-context-kit@beta
+ackit init
+ackit validate
+```
+
+Team-pinned development dependency:
+
+```bash
+npm install --save-dev --save-exact @jaemani/agent-context-kit@0.1.0-beta.0
+npx --no-install ackit init
+npx --no-install ackit validate
+```
+
+Do not mix the one-off example with a later bare `ackit` command unless the package is also installed
+globally or locally. The package is not currently on the registry; use the source workflow below
+until the license/release gate is resolved.
 
 ```bash
 git clone https://github.com/Jaemani/Agent-Context-Kit.git
@@ -75,142 +70,166 @@ npm run build
 node dist/cli.js init --root /path/to/your-project
 ```
 
-After the first npm release, the intended interface is:
-
-```bash
-npx @jaemani/agent-context-kit init
-ackit validate
-```
-
-The package is not published yet; the `npx` example documents the intended distribution contract,
-not current availability.
-
 ## Commands
 
 ### `ackit init`
 
-Creates the canonical directory, starter documents, and managed Codex/Claude adapter blocks.
+Creates the canonical context directory, copied v1 schema, starter documents, and managed Codex and
+Claude adapter blocks.
 
 ```bash
 ackit init --name "Example project"
 ackit init --adapters codex
 ackit init --dry-run
+ackit init --adopt
 ```
 
-If `AGENTS.md` or `CLAUDE.md` already exists, initialization stops before writing anything. Review
-the proposed behavior and rerun with `--adopt` to append a managed block while retaining the human
-content.
+If an adapter file already exists, initialization stops before writing. Review the proposed change
+and use `--adopt` to append a managed block while preserving human content.
 
 ### `ackit sync`
 
-Recompiles managed blocks after the config changes.
+Recompiles adapter blocks and repairs a missing or drifted copied schema.
 
 ```bash
 ackit sync
-ackit sync --check       # no writes; exit 1 if output would change
+ackit sync --check       # no writes; exit 1 if a generated artifact would change
 ackit sync --dry-run     # show the plan without writing
-ackit sync --adopt       # explicitly adopt existing unmanaged adapter files
+ackit sync --adopt       # explicitly adopt reviewed unmarked adapter files
 ```
 
-All adapters are preflighted before any adapter is written. Individual file replacement is atomic.
-Cross-file replacement is not claimed to be transactional if the operating system fails during the
-write phase.
+All changed outputs are preflighted and staged before rename. Parent directory and temporary-file
+identity, physical containment, and expected content are rechecked during commit. Individual
+replacements are atomic on supported local filesystems, and stale plans are rejected if a file or
+loaded configuration changed after inspection. Sequential multi-file rename is not claimed to be an
+OS-level transaction; portable path-based syscalls still have the residual race documented in the
+threat model and ADR-0007.
 
 ### `ackit validate`
 
-Checks configuration shape, document presence, path portability, symlink traversal, context budget,
-managed marker integrity, and adapter drift.
+Checks configuration, schema/directive state, managed path ownership, document and adapter budgets,
+portable/symlink-safe paths, handoff marker integrity, and generated drift.
 
 ```bash
 ackit validate
 ackit validate --json
 ```
 
-Commands discover `.agent-context/config.yaml` by walking upward, so validation and sync can run
-from a nested directory.
+`sync`, `validate`, and `handoff` discover the nearest `.agent-context/config.yaml` while walking
+upward, so they work from a nested directory. `init` always uses its explicit/current root.
+
+### `ackit handoff`
+
+Preserves handoff narrative while refreshing one managed block of deterministic repository evidence.
+
+```bash
+ackit handoff
+ackit handoff --check    # exit 1 when evidence would change
+ackit handoff --dry-run
+ackit handoff --json
+```
+
+Evidence includes branch/HEAD, upstream divergence, staged and unstaged line stats, aggregate status,
+up to 200 project-relative changed paths, and five recent scoped commits. The command does not call a
+model, contact a remote, stage, commit, or push.
+
+Two complete evidence observations must match. Repository changes during collection trigger up to
+three bounded attempts and then `E_GIT_CONCURRENT_MODIFICATION`, rather than a mixed-time snapshot.
+
+The project must be inside a Git worktree and its config must contain exactly one document whose ID is
+`handoff`; the path for that document is configurable.
 
 ## Canonical layout
 
 ```text
 .agent-context/
-  config.yaml       # schema version, document catalog, adapters, budgets
-  instructions.md   # memory operating and update protocol
-  project.md        # stable purpose, users, scope, and non-goals
-  current-state.md  # verified implementation state and next task
-  handoff.md        # latest session continuation contract
-  architecture.md   # on-demand system map
-  decisions.md      # on-demand decision index
-  conventions.md    # on-demand engineering workflow
-AGENTS.md            # human content plus a managed router block
-CLAUDE.md            # human content plus a managed router block
+  config.yaml               # canonical v1 catalog, adapters, and budgets
+  config.schema.json        # generated copy of the packaged public schema
+  instructions.md           # memory operating and update protocol
+  project.md                # stable purpose, users, scope, and non-goals
+  current-state.md          # verified implementation state and next task
+  handoff.md                # narrative plus managed Git evidence
+  architecture.md           # on-demand system map
+  decisions.md              # on-demand decision index
+  conventions.md            # on-demand engineering workflow
+AGENTS.md                    # human content plus Codex managed router
+CLAUDE.md                    # human content plus Claude managed router
 ```
 
-`config.yaml` controls load behavior:
+See the [configuration reference](docs/configuration.md) for the full v1 contract and
+[adapter compatibility](docs/adapter-compatibility.md) for exact supported discovery behavior.
 
-```yaml
-version: 1
-project:
-  name: Example
-documents:
-  - id: current-state
-    path: current-state.md
-    load: always
-    description: Current implementation state and next work
-  - id: architecture
-    path: architecture.md
-    load: on-demand
-    description: System boundaries and module responsibilities
-    triggers:
-      - architecture changes
-adapters:
-  - type: codex
-    output: AGENTS.md
-  - type: claude
-    output: CLAUDE.md
-policies:
-  maxAlwaysCharacters: 16000
-  maxAdapterCharacters: 12000
+## Design and safety commitments
+
+- **Local-first:** normal runtime makes no network or model calls.
+- **Progressive disclosure:** routers instruct agents to read selected documents first and defer
+  task-specific references until needed.
+- **Non-destructive adoption:** existing unmarked instruction files require explicit review/adoption.
+- **Deterministic output:** rendered bodies are deterministic for the same validated config and
+  inspected Git state; managed-file newlines and surrounding human content are preserved inputs.
+- **Exclusive ownership:** config, schema, documents, and adapters cannot share normalized paths.
+- **Fail closed:** malformed config/markers, path escape, symlinks, drift, and budget violations fail.
+- **Bounded Git:** sanitized environment, disabled fsmonitor, no shell, deadline, output ceiling,
+  stable repeated observations, and lossless safely escaped unusual-filename representation.
+- **No telemetry:** repository context is not uploaded by the core CLI.
+
+The beta intentionally does not claim semantic code-to-document freshness, exact tokenizer counts,
+cross-filesystem transactions, or support for agents whose discovery behavior has not been researched.
+See the [threat model](docs/threat-model.md) for residual risks.
+
+## Supported adapters
+
+| Adapter | Default output | Beta scope |
+| --- | --- | --- |
+| Codex | `AGENTS.md` | Default root router; no automatic override/nested hierarchy |
+| Claude Code | `CLAUDE.md` | Default root router; no automatic rules/import/local hierarchy |
+
+Cursor, Copilot, Gemini CLI, nested instructions, skills, and MCP are later work. New adapters require
+official discovery/precedence evidence and reviewed golden fixtures.
+
+## Programmatic package
+
+The package exports ESM JavaScript and TypeScript declarations. Public functions include config
+decoding/loading, init/sync/validate/handoff commands, adapter rendering/registry access, Git evidence,
+managed-block helpers, and `readPublicSchema()`.
+
+During beta, documented CLI exit categories, configuration v1, and non-destructive ownership rules are
+compatibility commitments. The broader TypeScript API may still change between prereleases and will
+follow package SemVer after stable. Expected command/library failures are `AckitError` instances with
+`code`, `exitCode`, and `diagnostics`; exit/config constants are exported from the package root.
+
+```ts
+import { decodeConfig, readPublicSchema } from "@jaemani/agent-context-kit";
+
+const schema = readPublicSchema();
+const result = decodeConfig(candidate);
 ```
 
-Paths use forward slashes and must remain portable across Windows, macOS, and Linux. Outputs may
-not overlap canonical sources.
-
-## Safety behavior
-
-Agent Context Kit assumes repository files may be malformed or adversarial. It therefore:
-
-- rejects absolute, traversing, non-normalized, and platform-reserved paths;
-- treats case-folded and Unicode-normalized path collisions as duplicates;
-- rejects symbolic links along managed read/write paths;
-- limits YAML alias expansion and fails on duplicate keys;
-- bounds config, text-file, catalog, and generated-router sizes and requires valid UTF-8;
-- performs complete adapter preflight before mutation;
-- preserves content outside exactly one managed marker pair;
-- keeps CI and automation output machine-readable with `--json`.
-
-See [the threat model](docs/threat-model.md) for boundaries and residual risk.
-
-## Development
+## Development and release checks
 
 ```bash
 npm ci
-npm run format:check
-npm run check
-npm test
-npm run test:coverage
 npm run quality
 npm run pack:check
+npm run test:package
+node dist/cli.js sync --check
+node dist/cli.js validate --json
 ```
 
-The coverage gate is 90% lines, 90% functions, and 85% branches. More importantly, the suite spans
-safe adoption, drift, preflight failure, path portability, symlinks, CRLF, Unicode, nested project
-discovery, CLI status codes, and file-mode preservation. See
-[the testing strategy](docs/testing-strategy.md).
+The suite covers allowed/rejected/repeated/failure states, three adoption shapes, randomized parser
+corpora, maximum catalogs, near-limit Git status, worktrees, monorepos, upstream divergence,
+concurrency, package installation modes, ESM, and declarations. CI targets Node 22/24 on Linux,
+macOS, and Windows.
+
+`npm run release:verify` additionally requires a clean licensed release commit, creates one tarball,
+records its SHA-256, and smoke-tests that exact artifact before publication.
 
 ## Project documents
 
 - [Product scope](docs/product-scope.md)
 - [Architecture](docs/architecture.md)
+- [Configuration](docs/configuration.md)
+- [Adapter compatibility](docs/adapter-compatibility.md)
 - [Threat model](docs/threat-model.md)
 - [Testing strategy](docs/testing-strategy.md)
 - [Roadmap](ROADMAP.md)
@@ -219,5 +238,5 @@ discovery, CLI status codes, and file-mode preservation. See
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
 
-No open-source license has been selected yet. Until the owner makes that explicit legal decision,
-the repository is source-available for evaluation but does not grant reuse rights.
+No open-source license has been selected yet. Until the owner makes that legal decision, the public
+repository does not grant reuse rights and the npm release workflow remains blocked.

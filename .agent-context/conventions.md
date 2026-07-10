@@ -3,7 +3,7 @@
 ## Supported environments
 
 - Node.js 22 and 24.
-- Linux, macOS, and Windows are the intended matrix; CI confirmation is an alpha gate.
+- Linux, macOS, and Windows are the supported beta matrix.
 - TypeScript uses strict unchecked-index and exact-optional-property checks.
 
 ## Commands
@@ -17,7 +17,9 @@ npm test
 npm run test:coverage
 npm run quality
 npm run pack:check
+npm run test:package
 node dist/cli.js sync --check
+node dist/cli.js validate --json
 ```
 
 When shell commands are run in this repository's current Codex environment, prefix every command
@@ -33,3 +35,5 @@ segment with `rtk` as required by the root AGENTS instructions.
 - Do not claim checks that were not run.
 
 Large beta changes require a dedicated review pass with findings recorded and resolved or accepted.
+Tagged releases additionally require `npm run release:verify`, a clean licensed commit, and the
+protected workflow in `docs/releasing.md`.

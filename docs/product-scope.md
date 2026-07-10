@@ -41,8 +41,8 @@ context source and compiles small adapters for each supported tool.
 
 ## Success measures
 
-The alpha is successful when it is safe and predictable on real repositories. The beta should add
-measurable product outcomes:
+The technical beta is successful when it is safe and predictable across dogfood and representative
+adoption fixtures. External beta learning and the stable gate add measurable product outcomes:
 
 - reduced manual onboarding text when switching agents;
 - zero unmanaged-content loss in adoption and synchronization tests;
@@ -53,4 +53,3 @@ measurable product outcomes:
 
 Exact telemetry is intentionally not collected by the local CLI in the current scope. Any future
 analytics must be opt-in and must not upload repository content.
-

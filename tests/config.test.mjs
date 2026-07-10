@@ -42,6 +42,18 @@ test("rejects case-insensitive and Unicode-normalized path collisions", () => {
   assert.equal(diagnosticCodes(result).includes("E_DOCUMENT_PATH_DUPLICATE"), true);
   assert.equal(diagnosticCodes(result).includes("E_ADAPTER_OUTPUT_DUPLICATE"), true);
   assert.equal(portablePathKey("cafe\u0301.md"), portablePathKey("caf\u00e9.md"));
+  assert.equal(portablePathKey("Σ.md"), portablePathKey("ς.md"));
+  assert.equal(portablePathKey("ß.md"), portablePathKey("SS.md"));
+  assert.equal(portablePathKey("ẞ.md"), portablePathKey("ss.md"));
+
+  const compatibility = createDefaultConfig("Example", ["codex", "claude"]);
+  compatibility.documents[1].path = "Σ.md";
+  compatibility.documents[2].path = "ς.md";
+  compatibility.adapters[0].output = "ß.md";
+  compatibility.adapters[1].output = "SS.md";
+  const compatibilityResult = decodeConfig(compatibility);
+  assert.equal(diagnosticCodes(compatibilityResult).includes("E_DOCUMENT_PATH_DUPLICATE"), true);
+  assert.equal(diagnosticCodes(compatibilityResult).includes("E_ADAPTER_OUTPUT_DUPLICATE"), true);
 });
 
 for (const invalidPath of [
@@ -53,6 +65,13 @@ for (const invalidPath of [
   "NUL.txt",
   "folder/name?.md",
   "trailing. ",
+  "COM¹.txt",
+  "LPT³",
+  "line\u2028separator.md",
+  "paragraph\u2029separator.md",
+  "\ud800.md",
+  "\ud801.md",
+  "\udc00.md",
 ]) {
   test(`rejects non-portable path: ${invalidPath}`, () => {
     assert.throws(() => assertPortableRelativePath(invalidPath));
@@ -63,9 +82,12 @@ test("rejects multiline and managed-marker metadata", () => {
   const input = createDefaultConfig("Example", ["codex"]);
   input.documents[0].description = "first\nsecond";
   input.documents[1].triggers = ["agent-context-kit:managed:start"];
+  input.documents[2].description = "control\u001bsequence";
+  input.documents[3].triggers = ["unicode\u2028separator"];
   const result = decodeConfig(input);
   assert.equal(diagnosticCodes(result).includes("E_SINGLE_LINE"), true);
   assert.equal(diagnosticCodes(result).includes("E_RESERVED_MARKER"), true);
+  assert.equal(diagnosticCodes(result).includes("E_SINGLE_LINE"), true);
 });
 
 test("bounds document, adapter, and trigger catalog sizes", () => {

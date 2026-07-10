@@ -2,37 +2,46 @@
 
 ## Active objective
 
-Establish a production-minded alpha foundation for cross-agent project memory before adding Git
-handoff automation, more adapters, skills, or MCP.
+Finish the `0.1.0-beta.0` release candidate, complete a final large-change review and remote matrix,
+then publish the scoped npm beta only after the owner selects an open-source license.
 
 ## Implemented and locally verified
 
-- Node.js/TypeScript `ackit` CLI with `init`, `sync`, and `validate`.
-- Strict version 1 YAML decoding with aggregated diagnostics.
-- Progressive always/on-demand context catalog and character budget.
-- Codex and Claude managed-block adapters with explicit non-destructive adoption.
-- Path traversal, platform portability, normalized collision, symlink, source overlap, and drift checks.
-- Bounded strict UTF-8 reads plus document, adapter, trigger, always-context, and router budgets.
-- Complete adapter preflight plus atomic per-file writes and mode preservation.
-- Human/JSON diagnostics and stable exit-code categories.
-- Unit, integration, CLI lifecycle, and coverage-gated tests.
-- Product scope, architecture, threat model, test strategy, roadmap, ADRs, and engineering log.
+- Node.js/TypeScript `ackit` CLI with `init`, `sync`, `validate`, and `handoff`.
+- Frozen configuration v1 contract, strict public JSON Schema, copied artifact, and upgrade warning.
+- Progressive always/on-demand context catalog and deterministic context/router budgets.
+- Registry-backed Codex and Claude adapters with official discovery docs and golden fixtures.
+- One normalized ownership graph for config, schema, documents, and adapter outputs.
+- Non-destructive adoption, exact standalone markers, staged atomic replacement, exact config/output
+  checks, root/parent/temporary identity guards, mode preservation, and guarded temporary cleanup.
+- Bounded Git evidence with sanitized environment, disabled fsmonitor, no shell/prompts, deadline,
+  combined output cap, KILL escalation, project-relative paths, and invalid-UTF-8 hex fallback.
+- Handoff branch/HEAD, divergence, status, staged/unstaged numstat, changed paths, and commits while
+  preserving narrative, excluding its own file, and requiring two matching Git observations.
+- Broad deterministic tests: property corpora, faults, concurrency, worktrees, monorepos, upstream,
+  performance, adoption, CLI, schema lifecycle, package installs, ESM, and TypeScript declarations.
+- Clean-build npm beta metadata, local/ephemeral/global package smoke, and exact-SHA
+  artifact/provenance workflow.
 
 ## In progress
 
-- License and npm scope ownership decisions before any public release.
-- Public JSON Schema and version-migration contract for the alpha configuration.
+- Commit/push and Linux/macOS/Windows remote CI matrix.
 
 ## Blockers and risks
 
-- No license has been selected, so reusable open-source distribution is not authorized yet.
-- npm scope ownership and final package naming need confirmation before publish.
-- Tool-specific adapter discovery/precedence conformance has not yet been researched and fixture-tested.
-- Multi-file writes are preflighted but not transactionally atomic across OS failure.
-- No public schema migration contract, fault injection, or parser fuzzing yet.
+- No license has been selected, so public npm distribution and reusable open-source rights are not
+  authorized.
+- The first npm publication may need one protected short-lived granular token before trusted
+  publishing can be configured; subsequent releases must use OIDC.
+- Sequential cross-file rename and the final path-check-to-syscall TOCTOU window remain; ADR-0007
+  explains why portable Node.js checks cannot fully remove it.
+- Additional Windows reparse-point/hard-link policy and authenticated tool-launch conformance remain
+  stable work.
+- External real-repository outcome evidence is not yet available; current coverage is synthetic
+  adoption scenarios plus this repository's dogfood context.
 
 ## Next best task
 
-Choose the repository license and confirm the npm scope/package name, then add a public JSON Schema
-and migration contract before tagging the first alpha. Do not expand into handoff automation until
-those distribution and compatibility foundations are explicit.
+Commit/push the reviewed candidate and pass the full remote matrix. Then obtain an explicit license
+choice (MIT is recommended), add its canonical file/metadata, and publish the exact reviewed beta
+artifact through the protected release workflow.

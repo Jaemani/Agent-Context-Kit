@@ -1,15 +1,25 @@
 import path from "node:path";
+import { isDeepStrictEqual } from "node:util";
 import { parseDocument } from "yaml";
 import { AckitError, issueError } from "../core/errors.js";
 import { readTextIfExists } from "../core/files.js";
 import { assertNoSymlink, canonicalProjectRoot, resolveProjectPath } from "../core/paths.js";
-import { CONFIG_PATH, type LoadedProject } from "../domain/types.js";
+import { CONFIG_PATH, type LoadedProject, type ProjectConfig } from "../domain/types.js";
 import { decodeConfig } from "./decode.js";
+
+const MAX_CONFIG_BYTES = 1024 * 1024;
 
 export async function loadProject(rootInput: string): Promise<LoadedProject> {
   const { root, source } = await findProjectRoot(rootInput);
   const configPath = resolveProjectPath(root, CONFIG_PATH);
+  const config = parseConfigSource(source);
+  return deepFreeze({ root, configPath, configSource: source, config });
+}
 
+export function parseConfigSource(source: string): ProjectConfig {
+  if (Buffer.byteLength(source, "utf8") > MAX_CONFIG_BYTES) {
+    throw issueError("E_FILE_TOO_LARGE", "Configuration source exceeds the 1 MiB safety limit.");
+  }
   const document = parseDocument(source, {
     prettyErrors: true,
     strict: true,
@@ -43,7 +53,44 @@ export async function loadProject(rootInput: string): Promise<LoadedProject> {
     });
   }
 
-  return { root, configPath, config: decoded.config };
+  return decoded.config;
+}
+
+export async function assertLoadedProjectSnapshot(project: LoadedProject): Promise<void> {
+  const expectedConfigPath = resolveProjectPath(project.root, CONFIG_PATH);
+  if (path.resolve(project.configPath) !== expectedConfigPath) {
+    throw issueError(
+      "E_PROJECT_SNAPSHOT",
+      "Loaded project configuration path does not match its project root.",
+    );
+  }
+  const sourceConfig = parseConfigSource(project.configSource);
+  if (!isDeepStrictEqual(sourceConfig, project.config)) {
+    throw issueError(
+      "E_PROJECT_SNAPSHOT",
+      "Loaded project configuration was mutated after parsing.",
+      "Reload the project before calling a command.",
+    );
+  }
+
+  let currentSource: string | undefined;
+  try {
+    await assertNoSymlink(project.root, expectedConfigPath);
+    currentSource = await readTextIfExists(expectedConfigPath, { maxBytes: MAX_CONFIG_BYTES });
+  } catch {
+    throw concurrentConfigChange();
+  }
+  if (currentSource !== project.configSource) {
+    throw concurrentConfigChange();
+  }
+}
+
+function concurrentConfigChange(): AckitError {
+  return issueError(
+    "E_CONCURRENT_MODIFICATION",
+    `Configuration changed after it was loaded: ${CONFIG_PATH}`,
+    "Reload the project and rerun the command.",
+  );
 }
 
 async function findProjectRoot(startInput: string): Promise<{ root: string; source: string }> {
@@ -52,7 +99,7 @@ async function findProjectRoot(startInput: string): Promise<{ root: string; sour
   while (true) {
     const candidate = resolveProjectPath(current, CONFIG_PATH);
     await assertNoSymlink(current, candidate);
-    const source = await readTextIfExists(candidate, { maxBytes: 1024 * 1024 });
+    const source = await readTextIfExists(candidate, { maxBytes: MAX_CONFIG_BYTES });
     if (source !== undefined) {
       return { root: current, source };
     }
@@ -67,4 +114,10 @@ async function findProjectRoot(startInput: string): Promise<{ root: string; sour
     }
     current = parent;
   }
+}
+
+function deepFreeze<T>(value: T): T {
+  if (typeof value !== "object" || value === null || Object.isFrozen(value)) return value;
+  for (const nested of Object.values(value)) deepFreeze(nested);
+  return Object.freeze(value);
 }

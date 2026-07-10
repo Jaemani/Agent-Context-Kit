@@ -5,29 +5,29 @@ export type AdapterType = "codex" | "claude";
 export type LoadPolicy = "always" | "on-demand";
 
 export interface ProjectConfig {
-  version: typeof CONFIG_VERSION;
-  project: {
-    name: string;
+  readonly version: typeof CONFIG_VERSION;
+  readonly project: {
+    readonly name: string;
   };
-  documents: ContextDocument[];
-  adapters: AdapterConfig[];
-  policies: {
-    maxAlwaysCharacters: number;
-    maxAdapterCharacters: number;
+  readonly documents: readonly ContextDocument[];
+  readonly adapters: readonly AdapterConfig[];
+  readonly policies: {
+    readonly maxAlwaysCharacters: number;
+    readonly maxAdapterCharacters: number;
   };
 }
 
 export interface ContextDocument {
-  id: string;
-  path: string;
-  load: LoadPolicy;
-  description: string;
-  triggers?: string[];
+  readonly id: string;
+  readonly path: string;
+  readonly load: LoadPolicy;
+  readonly description: string;
+  readonly triggers?: readonly string[];
 }
 
 export interface AdapterConfig {
-  type: AdapterType;
-  output: string;
+  readonly type: AdapterType;
+  readonly output: string;
 }
 
 export type DiagnosticLevel = "error" | "warning";
@@ -41,7 +41,8 @@ export interface Diagnostic {
 }
 
 export interface LoadedProject {
-  root: string;
-  configPath: string;
-  config: ProjectConfig;
+  readonly root: string;
+  readonly configPath: string;
+  readonly configSource: string;
+  readonly config: ProjectConfig;
 }

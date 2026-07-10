@@ -36,9 +36,14 @@ Negative:
 - hidden directories are less visible in basic file listings;
 - scoped npm ownership and final naming are not yet proven.
 
+## Validation note — 2026-07-10
+
+The authenticated npm account now matches scope `@jaemani`, the scoped package remains unregistered,
+and account write 2FA is enabled. The original naming rationale remains unchanged; license selection
+and first-publication bootstrap are tracked by the release process.
+
 ## Revisit triggers
 
 - package registry or trademark research identifies a conflict;
 - user testing shows the executable is hard to discover or remember;
 - a broader standard defines a canonical directory name.
-

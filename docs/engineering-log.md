@@ -118,3 +118,154 @@ minimum supported Node 22 API surface.
 The current Actions major tags were resolved to their upstream commits and pinned by SHA with version
 comments. Dependabot can still propose reviewed SHA updates, while an upstream tag move cannot alter
 CI execution silently.
+
+## 2026-07-10 — Beta compatibility and handoff hardening
+
+### Strict schema compilation exposed incomplete local contracts
+
+The first schema used constraints such as `maxLength` inside conditional branches without repeating
+the local string type. Strict Ajv correctly rejected the ambiguous shape. The schema was rewritten
+with complete direct contracts, then runtime/schema corpus tests were added instead of weakening
+strict compilation.
+
+Review then found two opposite compatibility errors: the schema rejected 1,025-character paths while
+runtime accepted them, and runtime silently trimmed strings that the schema evaluated raw. Runtime
+now enforces the documented 1,024-Unicode-character path ceiling and rejects surrounding whitespace.
+Unicode length checks use code points so astral characters behave like JSON Schema length.
+
+### The copied schema introduced a new path owner
+
+Initial integration treated `config.schema.json` as just another sync output. An adapter or document
+could claim the same exact/case-normalized path, causing sequential writes to corrupt one owner. A
+single normalized ownership graph now covers config, copied schema, documents, and adapters before
+any plan is committed.
+
+### Porcelain paths contradicted normal Git status behavior
+
+A monorepo test showed `status.relativePaths=true` did not produce project-relative paths. Git
+porcelain v1 intentionally ignores that user-facing setting and reports repository-root paths. The
+implementation now reads Git's worktree prefix and strips it losslessly; rename sources outside the
+project are explicitly marked repository-relative.
+
+### Disabling fsmonitor on only `git status` was insufficient
+
+The first security pass set `core.fsmonitor=false` on status. An executable fixture still ran because
+the parallel cached diff also consulted the index. The override now prefixes every Git subcommand.
+The test remains as a regression against partial command-by-command hardening.
+
+### Process limits needed combined accounting and forced escalation
+
+The initial runner capped stdout and stderr separately and relied on one SIGTERM timeout. It now
+enforces one combined byte ceiling, records the first termination cause, sends TERM followed by KILL,
+and distinguishes unavailable, timeout, output, signal, format, and encoding failures. Invalid UTF-8
+path bytes remain reversible instead of collapsing to replacement characters.
+
+### Prospective validation prevented handoff from invalidating its own project
+
+Two hundred long Git paths could expand an always-loaded handoff beyond its configured budget. The
+command now validates an in-memory override before writing. Standalone marker parsing also lets human
+prose mention marker text without accidentally transferring ownership.
+
+### Atomic rename did not prevent stale-plan loss
+
+Per-file atomic replacement could still overwrite a human edit made after preflight. Writes now stage
+the entire batch, verify expected output and config source content, and only then begin rename. Tests
+cover stale config/output, non-regular later targets, cleanup, and unchanged earlier files. The final
+read-to-rename race and sequential cross-file commit limitation remain explicit.
+
+### Package tests were widened from a local binary smoke
+
+The original tarball test installed locally and invoked a known compiled path. It now starts from a
+clean build, proves packed `dist` exactly corresponds to `src`, and exercises local npm binary,
+ephemeral npm exec, global install shim, ESM API, TypeScript declarations, init, and validation. The
+release path records one tarball SHA-256 and publishes that same artifact.
+
+### Official documentation lookup had a verifiable tooling failure
+
+The Codex manual helper rejected its response because the expected `x-content-sha256` header was
+missing. The official developer manual endpoint was then queried directly, and the official docs MCP
+was added for future sessions. Adapter behavior was recorded only from official Codex and Claude Code
+sources; unsupported nested/override behavior remains out of scope.
+
+### npm distribution prerequisites were verified without publishing
+
+The scoped package name is unregistered, the authenticated npm account matches the scope, email is
+verified, and account 2FA is in `auth-and-writes` mode. The beta dist-tag/public/provenance policy and
+trusted-publishing workflow are prepared. Publication remains deliberately blocked because no license
+grant has been selected.
+
+## 2026-07-10 — Beta large-change review returned NO-GO
+
+An independent read-only review was run after the schema, handoff, packaging, and release changes had
+been integrated. It found no P0 issue, but it returned NO-GO with two P1 and two P2 findings. Passing
+tests were not treated as sufficient evidence to release.
+
+### A frozen object was not necessarily a current object
+
+`LoadedProject` was deeply frozen and checked against its original source, but command entry did not
+re-read the configuration file. A caller that loaded once, changed `config.yaml`, and then called
+validate, sync check/dry-run, or handoff check/dry-run could receive a result based on stale policy.
+Write mode caught the change only when drift led to the final write precondition.
+
+The snapshot assertion is now asynchronous and re-reads the exact configuration with the same
+symlink, regular-file, UTF-8, and one-MiB boundaries used by loading. In-memory forgery remains
+`E_PROJECT_SNAPSHOT`; a changed or inaccessible on-disk source is
+`E_CONCURRENT_MODIFICATION`. Regression tests cover no-drift, check, dry-run, normal, missing,
+oversized, and symlinked configuration states.
+
+### File content did not identify its parent path
+
+Expected-content comparison protected a target from a normal concurrent edit, but the parent
+directory could be renamed and replaced with a symlink after preflight. The later sibling temporary
+write was still path-based and could be redirected outside the repository.
+
+The write boundary now carries root and directory device/inode guards, records initially missing
+parents, checks physical containment, and verifies parent and temporary-file identity immediately
+before staging and rename. Preconditions are rechecked before each remaining commit. Cleanup refuses
+to follow a temporary path after its parent becomes untrusted. A deterministic parent-substitution
+test verifies that no managed content reaches the external directory. ADR-0007 records the remaining
+Node.js `openat`/`renameat` limitation rather than claiming the final syscall window is eliminated.
+
+The first implementation of these guards exposed two useful integration failures. Guards for several
+new files all expected `.agent-context/` to be absent, so later stages initially mistook the batch's
+own directory creation for an external change. Then every target precondition was rechecked after the
+first target had committed, so the batch mistook its own new file for a stale plan. The fixed protocol
+validates all original guards before staging and rechecks only uncommitted target expectations during
+the commit loop.
+
+### Parallel Git commands could describe different repository moments
+
+Branch, HEAD, status, numstat, and log were previously gathered concurrently once. An index update,
+worktree write, or commit during that window could create internally inconsistent evidence. Each
+attempt now gathers two complete observations and compares every exit code, stdout, and stderr.
+Mismatch retries up to three times; continuous change fails with
+`E_GIT_CONCURRENT_MODIFICATION`. Deterministic injected-runner tests prove both stable retry and
+bounded failure.
+
+### Untrusted Unicode needed safe evidence rendering
+
+Valid Git filenames and commit metadata may contain Unicode line separators, bidirectional controls,
+or other invisible format characters. Raw `JSON.stringify` can leave some of them literal, which can
+visually spoof evidence or interact with standalone marker detection. Rendered evidence now escapes
+control, format, line, and paragraph separator code points using JSON Unicode escapes. Parsing the
+line still recovers the original value exactly.
+
+### Package execution semantics differed across npm versions
+
+The expanded smoke test initially invoked `npx --yes <tarball> --version`. The installed npm client
+treated the tarball path as the executable and failed with exit 126. The stable form explicitly uses
+`--package <tarball> -- ackit --version`, which both identifies the exact artifact and names the binary.
+The smoke also verifies shell-free npm/npx discovery, local and global binaries, the Windows command
+shim, ESM runtime exports, TypeScript declarations, init, and validate.
+
+The fourth review finding was the stale handoff narrative itself: it still described 46 tests and
+listed schema and handoff as future work. The human-authored section is replaced only after final
+verification so it records the actual reviewed tree and exact gates rather than another intermediate
+claim.
+
+The follow-up review found no remaining P0, P1, or P2 code defect and confirmed that the original
+stale-snapshot, parent-substitution, mixed-Git-observation, and Unicode findings were resolved. It
+withheld GO for one evidence-freshness issue: the handoff snapshot and the word “final” predated two
+late hardening edits. The tree was frozen, the complete quality, package, dogfood, and audit gates were
+rerun, and handoff evidence was refreshed last. This ordering is now part of the release handoff rather
+than an informal convention.

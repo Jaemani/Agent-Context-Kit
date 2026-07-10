@@ -1,5 +1,11 @@
+import { assertLoadedProjectSnapshot } from "../config/load.js";
 import type { Diagnostic, LoadedProject } from "../domain/types.js";
-import { validateAdapters, validateContext } from "../validation/validate.js";
+import {
+  validateAdapters,
+  validateConfigSchemaDirective,
+  validateContext,
+  validatePublicSchema,
+} from "../validation/validate.js";
 
 export interface ValidateResult {
   diagnostics: Diagnostic[];
@@ -7,7 +13,13 @@ export interface ValidateResult {
 }
 
 export async function validateProject(project: LoadedProject): Promise<ValidateResult> {
-  const diagnostics = [...(await validateContext(project)), ...(await validateAdapters(project))];
+  await assertLoadedProjectSnapshot(project);
+  const diagnostics = [
+    ...(await validateContext(project)),
+    ...(await validateConfigSchemaDirective(project)),
+    ...(await validatePublicSchema(project)),
+    ...(await validateAdapters(project)),
+  ];
   return {
     diagnostics,
     valid: !diagnostics.some((diagnostic) => diagnostic.level === "error"),

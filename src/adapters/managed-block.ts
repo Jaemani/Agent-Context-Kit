@@ -1,4 +1,5 @@
 import { issueError } from "../core/errors.js";
+import { detectTextEol, standaloneMarkerLines } from "../core/marker-lines.js";
 
 export const MANAGED_START = "<!-- agent-context-kit:managed:start -->";
 export const MANAGED_END = "<!-- agent-context-kit:managed:end -->";
@@ -13,13 +14,21 @@ export function upsertManagedBlock(
   body: string,
   options: { adopt: boolean },
 ): string {
+  if (
+    standaloneMarkerLines(body, MANAGED_START).length > 0 ||
+    standaloneMarkerLines(body, MANAGED_END).length > 0
+  ) {
+    throw issueError(
+      "E_MANAGED_BODY_MARKER",
+      "Generated adapter content must not contain standalone managed markers.",
+    );
+  }
   if (existing === undefined) {
     return `${wrapManagedBlock(body)}\n`;
   }
-
-  const startCount = countOccurrences(existing, MANAGED_START);
-  const endCount = countOccurrences(existing, MANAGED_END);
-  if (startCount !== endCount || startCount > 1) {
+  const starts = standaloneMarkerLines(existing, MANAGED_START);
+  const ends = standaloneMarkerLines(existing, MANAGED_END);
+  if (starts.length !== ends.length || starts.length > 1) {
     throw issueError(
       "E_MANAGED_MARKERS",
       "Adapter file has missing or duplicate Agent Context Kit managed markers.",
@@ -27,11 +36,14 @@ export function upsertManagedBlock(
     );
   }
 
-  const eol = existing.includes("\r\n") ? "\r\n" : "\n";
+  const eol = detectTextEol(existing);
   const block = wrapManagedBlock(body, eol);
-  if (startCount === 1) {
-    const start = existing.indexOf(MANAGED_START);
-    const end = existing.indexOf(MANAGED_END, start);
+  if (starts.length === 1 && ends.length === 1) {
+    const start = starts[0];
+    const end = ends[0];
+    if (start === undefined || end === undefined) {
+      throw new Error("Validated adapter marker positions are unavailable.");
+    }
     if (end < start) {
       throw issueError(
         "E_MANAGED_MARKERS",
@@ -61,19 +73,18 @@ export function upsertManagedBlock(
 }
 
 export function hasManagedBlock(content: string): boolean {
-  return content.includes(MANAGED_START) && content.includes(MANAGED_END);
+  const starts = standaloneMarkerLines(content, MANAGED_START);
+  const ends = standaloneMarkerLines(content, MANAGED_END);
+  return (
+    starts.length === 1 &&
+    ends.length === 1 &&
+    (starts[0] ?? Number.POSITIVE_INFINITY) < (ends[0] ?? Number.NEGATIVE_INFINITY)
+  );
 }
 
-function countOccurrences(value: string, needle: string): number {
-  let count = 0;
-  let index = 0;
-  while (index !== -1) {
-    index = value.indexOf(needle, index);
-    if (index === -1) {
-      break;
-    }
-    count += 1;
-    index += needle.length;
-  }
-  return count;
+export function hasAnyManagedMarker(content: string): boolean {
+  return (
+    standaloneMarkerLines(content, MANAGED_START).length > 0 ||
+    standaloneMarkerLines(content, MANAGED_END).length > 0
+  );
 }

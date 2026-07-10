@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import process from "node:process";
+import { resolveNpmInvocation } from "./lib/npm-cli.mjs";
 
 const repositoryRoot = path.resolve(import.meta.dirname, "..");
 const temporaryRoot = await mkdtemp(path.join(tmpdir(), "ackit-pack-check-"));
@@ -17,11 +18,33 @@ try {
   const files = new Set(artifact.files.map((file) => file.path));
   assert.equal(files.has("package.json"), true);
   assert.equal(files.has("README.md"), true);
+  assert.equal(files.has("docs/configuration.md"), true);
+  assert.equal(files.has("docs/adapter-compatibility.md"), true);
+  assert.equal(files.has("CHANGELOG.md"), true);
   assert.equal(files.has("dist/cli.js"), true);
+  assert.equal(files.has("dist/index.js"), true);
+  assert.equal(files.has("dist/index.d.ts"), true);
+  assert.equal(files.has("schemas/config-v1.schema.json"), true);
   assert.equal(
     [...files].some((file) => file.startsWith("src/")),
     false,
   );
+  const sourceFiles = (
+    await readdir(path.join(repositoryRoot, "src"), {
+      recursive: true,
+      withFileTypes: true,
+    })
+  )
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".ts"))
+    .map((entry) =>
+      path.relative(path.join(repositoryRoot, "src"), path.join(entry.parentPath, entry.name)),
+    )
+    .flatMap((file) => {
+      const base = `dist/${file.slice(0, -3)}`.replaceAll(path.sep, "/");
+      return [`${base}.js`, `${base}.js.map`, `${base}.d.ts`, `${base}.d.ts.map`];
+    });
+  const actualDist = [...files].filter((file) => file.startsWith("dist/")).sort();
+  assert.deepEqual(actualDist, sourceFiles.sort(), "packed dist must exactly match compiled src");
   assert.equal(
     [...files].some((file) => file.startsWith("tests/")),
     false,
@@ -38,9 +61,14 @@ try {
 }
 
 async function runNpmPack(cacheDirectory) {
+  const invocation = await resolveNpmInvocation([
+    "pack",
+    "--dry-run",
+    "--json",
+    "--ignore-scripts",
+  ]);
   return await new Promise((resolve, reject) => {
-    const command = process.platform === "win32" ? "npm.cmd" : "npm";
-    const child = spawn(command, ["pack", "--dry-run", "--json", "--ignore-scripts"], {
+    const child = spawn(invocation.command, invocation.arguments, {
       cwd: repositoryRoot,
       env: {
         ...process.env,
