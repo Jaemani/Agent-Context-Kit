@@ -2,8 +2,8 @@
 
 ## Active objective
 
-Publish the reviewed beta.5 candidate through the OIDC-only workflow, verify the exact public
-artifact, then run the minimum Tier 1 continuity pilot without implementing journaling or compaction.
+Close the verified beta.5 release evidence, then execute the preregistered minimum Tier 1 continuity
+pilot without implementing journaling or compaction.
 
 ## Implemented and verified
 
@@ -17,14 +17,15 @@ artifact, then run the minimum Tier 1 continuity pilot without implementing jour
   evidence gates; research protocols remain outside the product package.
 - Dogfood lifecycle, package consumers, complete dist-tag policy, and independent post-fix
   code/security and release reviews pass locally. Exact measurements belong to the engineering log.
+- Immutable beta.5 is publicly installable through the explicit npm `beta` channel. Its tagged
+  cross-platform preflight, token-free OIDC publication, registry artifact, executable, dist-tags,
+  signature, and SLSA provenance were independently verified.
 
 ## In progress
 
-- The reviewed beta.5 implementation commit passed the eleven-job Linux/macOS/Windows CI matrix. The
-  final release-content commit still needs exact-commit CI before tagging.
-- Immutable beta.4 is publicly installable from the npm `beta` tag and its artifact and provenance
-  were independently verified. The old package now carries an exact migration deprecation and the
-  GitHub bootstrap secret is removed; exact evidence is recorded in the engineering log.
+- Post-release evidence is being checkpointed separately from the immutable beta.5 release commit.
+- The Tier 1 protocol exists, but its two repository fixtures, task rubrics, randomized order, and
+  authenticated two-harness access must be frozen in a committed preregistration before scored runs.
 
 ## Blockers and risks
 
@@ -36,12 +37,11 @@ artifact, then run the minimum Tier 1 continuity pilot without implementing jour
 - External outcome evidence and additional Windows reparse/hard-link coverage remain stable-release
   work.
 - npmjs.org does not allow removing `latest`; beta.4 remains the documented bare-install bootstrap
-  until stable while `@beta` advances. Bootstrap-token revocation and the beta.5 OIDC publication
-  proof still require verification.
-- Trusted-publisher identity and both packages' token-disallow policies require owner-side pre-tag
-  confirmation because public registry APIs do not expose those settings.
+  until stable while `@beta` advances.
+- Cross-harness behavioral continuity, repeated-switch retention, conversation reconstruction, and
+  compaction value remain unproven and outside the supported runtime.
 
 ## Next best task
 
-Commit and push the settled beta.5 release content, require exact-commit CI, confirm the owner-side npm
-settings, then tag and prove token-free OIDC publication.
+Commit the post-release evidence, freeze the Tier 1 fixtures and harness prerequisites, then execute
+the randomized pilot without changing the product during scored runs.

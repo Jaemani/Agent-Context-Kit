@@ -838,8 +838,39 @@ revocation remain owner-side pre-tag checks; token-free beta.5 publication is th
 
 After those review findings were resolved, the independent follow-up verdict was GO with no new
 release blocker. The final-content full gate then passed 169/169 tests with 94.74% lines, 96.02%
-functions, and 89.31% branches. Dogfood sync and JSON validation were clean; the 148-file package
+functions, and 89.39% branches. Dogfood sync and JSON validation were clean; the 148-file package
 passed pack inspection, real publish dry-run, local, ephemeral, global, ESM, strict
 declaration, v1-to-v2 migration, initialization, validation, checkpoint, and resume consumers.
 Production audit reported zero vulnerabilities. Exact-commit CI and the tagged OIDC publication
 remain separate release gates and are not claimed by this local evidence.
+
+## 2026-07-12 — Carrylog beta.5 proved token-free OIDC publication
+
+Release commit `343b4e381f5994c71a55a39dbcd34cf6862df16f` passed all eleven exact-commit CI
+jobs in run `29180977788`. Annotated immutable tag `v0.1.0-beta.5` points through tag object
+`4f5fd628d27addaccbff14214eedbefe828aca43` to that exact commit locally and on `origin`.
+Release run `29181258500` passed Linux, macOS, and Windows preflight before the protected `npm`
+environment was approved. The publish job then used the pinned npm 11.18.0 client, no registry token
+or workflow secret, and GitHub OIDC trusted publishing; all four jobs completed successfully.
+
+The workflow built and published one 148-file tarball. An independent registry download matched the
+workflow artifact at SHA-256 `5f706672adfed5e2e4bc6e347fcdedb23359448d9c7fbca0ed2128c0f44bb1ce`,
+SHA-1 `c248e61ccf4ed41c14ab7ad33ef33895dbe98670`, and SHA-512 integrity
+`hBbNpTP0NEEpIAJBzKqAlnUGbUXGyLxnJ82h1+NQgIjvPGNEQrjjwodseRXU8XEoTF0F81vTE0ErpTNEUXF32Q==`.
+The registry reports 148 files, 146,636 packed bytes, and 565,208 unpacked bytes. `beta` resolves to
+`0.1.0-beta.5`; the intentionally fixed `latest` remains `0.1.0-beta.4`.
+
+The public package exposes an npm signature and two attestations. Its SLSA provenance names
+`Jaemani/Carrylog`, `.github/workflows/release.yml`, `refs/tags/v0.1.0-beta.5`, the exact release
+commit, and run `29181258500` attempt 1. npm published the statement at transparency-log index
+`2148288214`. Both the protected workflow and a separate clean temporary directory executed the
+exact public package as `0.1.0-beta.5`.
+
+One initial independent `npx` command was run from Carrylog's own source directory while a global
+beta.4 executable remained on `PATH`; npm selected that ambient executable and printed beta.4 despite
+the exact package argument. That result was rejected rather than treated as a registry defect. The
+source build printed beta.5, and isolated `npm exec`/`npx` runs outside the self-package directory
+printed beta.5 from the public registry. The protected verifier already creates a fresh temporary
+root and private npm cache for this reason. This distinction is retained as a release-diagnostics
+lesson: package-self working directories and ambient executables are not independent consumer
+evidence.

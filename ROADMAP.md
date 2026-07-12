@@ -22,18 +22,18 @@ Implemented in the `0.1.0` beta line:
 - Carrylog product/package/CLI identity with a tested beta.3 repository compatibility path that
   preserves configuration v1 wire identifiers.
 
-Post-publication operations before the beta channel is fully hardened:
+Completed publication and channel-hardening operations:
 
-- publish and verify `carrylog@0.1.0-beta.4` from the renamed repository;
-- configure protected trusted publishing and retire the short-lived bootstrap token;
+- published and verified `carrylog@0.1.0-beta.4` from the renamed repository;
+- configured protected trusted publishing and retired the short-lived bootstrap path;
 - keep the registry-required first-publication `latest` fixed at beta.4 until stable while later
   prereleases advance only through explicit `@beta` opt-in;
-- deprecate the old scoped beta with an exact Carrylog migration message;
-- prove a later Carrylog beta publishes through OIDC with no registry token.
+- deprecated the old scoped beta with an exact Carrylog migration message;
+- published and verified beta.5 through protected OIDC with no registry token.
 
 Delivery and outcome work now takes priority over additional defensive breadth:
 
-- complete the first verified unscoped npm publication and a five-minute source/registry path;
+- exercise the published five-minute registry path on external repositories;
 - run the committed Tier 1 checkpoint-continuity pilot before building session journaling;
 - dogfood on two additional materially different repositories and publish sanitized adoption notes;
 - measure whether users reduce project re-explanation and repeated work;
@@ -46,6 +46,8 @@ Implemented in the `0.1.0-beta.5` prerelease line:
 - shared Codex/Cursor `agents` surface plus Claude Code and Gemini CLI root routers;
 - repository continuity Skills with fail-closed ownership;
 - deterministic checkpoint/resume envelope with guarded consistent reads and no transcript parsing.
+- token-free protected OIDC publication with complete prerelease dist-tag and public-artifact
+  verification.
 
 ## 0.2 beta — measured adoption and selective adapter breadth
 

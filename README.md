@@ -14,9 +14,9 @@ After:  switch agent -> carrylog resume -> inspect one objective, evidence set, 
 
 Carrylog resumes project state, not a provider's private chat or hidden model state.
 
-> **Status:** This source represents the reviewed `0.1.0-beta.5` prerelease. npm's explicit `beta`
-> channel is the advancing prerelease channel; first publication forced `latest` to remain at beta.4
-> until stable. Registry verification is part of the protected release workflow. Current limits are
+> **Status:** `carrylog@0.1.0-beta.5` is published and independently verified on npm's explicit
+> `beta` channel. First publication forced `latest` to remain at beta.4 until stable, so prerelease
+> users should keep using `carrylog@beta` or an exact version. Current limits are
 > tracked in [Current state](.agent-context/current-state.md) and
 > [ADR-0010](docs/decisions/0010-portable-checkpoint-and-resume-boundary.md).
 
