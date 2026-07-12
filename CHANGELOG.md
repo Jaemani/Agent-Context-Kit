@@ -5,9 +5,7 @@ Semantic Versioning; configuration versions follow the separate contract in ADR-
 
 ## [Unreleased]
 
-This section is preparing the `0.1.0-beta.5` release candidate. Independent review, settled
-checkpoint evidence, and final release gates are still pending; the target version in package
-metadata does not by itself mean the candidate is approved or released.
+## [0.1.0-beta.5] - 2026-07-12
 
 ### Added
 
@@ -24,6 +22,8 @@ metadata does not by itself mean the candidate is approved or released.
 - New initialization defaults to configuration v2 and Codex, Claude Code, Cursor, and Gemini CLI.
 - Set the release-candidate preparation target to `0.1.0-beta.5`; immutable beta.4 evidence is not
   reused.
+- Made `@beta` the explicit advancing prerelease channel while the registry-required
+  first-publication `latest` remains fixed at beta.4 until stable.
 - Reframed README and roadmap around source-first onboarding, first publication, measured adoption,
   and repository-owned project-memory governance. Journaling and semantic compaction remain research
   work behind evidence gates.
@@ -49,6 +49,8 @@ metadata does not by itself mean the candidate is approved or released.
   bidirectional formatting, and multiline field spoofing from repository-controlled input.
 - Portable resume caps one aggregate configuration/document observation at 8 MiB in addition to the
   existing per-file limits.
+- Removed the first-publication `NPM_TOKEN` fallback from the release workflow; future publication is
+  OIDC-only and fails closed when trusted-publisher configuration is absent or incorrect.
 
 ### Testing
 
@@ -60,6 +62,8 @@ metadata does not by itself mean the candidate is approved or released.
 - Added regressions for beta.4 global shadowing, incompatible pinned executables, HTML-hidden headings,
   terminal/field spoofing, generated legacy-command evidence, stock v1 snapshots, aggregate context
   exhaustion, v1 resume errors, runtime init options, and `research/` package exclusion.
+- Added release-workflow contracts for the exact OIDC publish path and complete dist-tag verification,
+  including accepted fixed-`latest` state and rejected stale, moved, missing, and malformed states.
 
 ## [0.1.0-beta.4] - 2026-07-12
 
@@ -67,8 +71,9 @@ Tag `v0.1.0-beta.4` passed cross-platform preflight and exact artifact verificat
 rejected creation of the unscoped package with authorization-only `E403`; after the protected
 bootstrap credential was replaced and registry absence was rechecked, failed-job-only attempt 2
 published the unchanged tagged source and verified artifact. The `beta` channel now resolves to this
-version. npm also assigned an unintended `latest` tag during first publication; its removal and
-credential hardening remain release-administration work recorded in the engineering log.
+version. npm also assigned `latest` during first publication and later rejected its removal; beta.4
+therefore remains the documented bare-install bootstrap until a stable release replaces it. The
+registry investigation and credential hardening are recorded in the engineering log.
 
 ### Changed
 

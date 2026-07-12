@@ -804,3 +804,42 @@ and exact minimum Node.js 22.0.0; and the Node.js 24.15.0/npm 11.18.0 release cl
 package contract. This establishes cross-platform evidence for the reviewed beta.5 implementation
 candidate. A later changelog promotion or release-evidence commit changes packaged bytes and still
 requires its own exact-commit gates before tagging.
+
+## 2026-07-12 — Registry administration corrected the `latest` removal assumption
+
+Owner-authenticated administration exposed a false release-policy assumption. npm 10.9.8 rejected
+`npm dist-tag rm carrylog latest` with `EOTP`; after WebAuthn authentication npm 11.18.0 reached the
+registry but returned HTTP 400 for the same DELETE. pnpm 11.11.0 made the hidden invariant explicit as
+`ERR_PNPM_DIST_TAG_RM_LATEST`: npmjs.org does not permit removal of `latest`. No dist-tag changed.
+Release policy now keeps the first-publication beta.4 `latest` fixed until a stable version replaces
+it and requires explicit `carrylog@beta` opt-in for later prereleases. The legacy package likewise
+keeps its unavoidable `latest` pointer rather than pretending it can be unset.
+
+The initial recovery-code guidance was also wrong: npm recovery codes restore web access and are not
+CLI `--otp` values. The failed recovery-code DELETE returned HTTP 400 without changing registry state.
+npm 11.18.0 correctly converted the configured WebAuthn security key into a browser challenge for
+owner operations. Using that flow, exact version `@jaemani/agent-context-kit@0.1.0-beta.3` was
+deprecated with the reviewed Carrylog migration message, and a public registry query returned that
+exact message. GitHub environment `npm` listed `NPM_TOKEN` before deletion and no secrets afterward.
+The token value was never retrieved or printed. Revocation of the underlying npm credential remains
+an owner-side verification item; beta.5 removes the workflow token fallback so its publication must
+succeed through trusted OIDC or fail closed.
+
+An independent release review then returned NO-GO because the protected verification read only
+`dist-tags.beta`, the static OIDC test did not require an actual publish or registry-verification
+step, and the historical bootstrap instructions still described a token path that the current
+workflow no longer supported. The release verifier now reads the complete tag object and requires
+both the new beta version and beta.4's fixed `latest`; accepted and rejected policy fixtures cover
+stale, moved, missing, and malformed states. The workflow contract now requires preflight ordering,
+the exact npm 11.18.0 client pin, publish command, post-publication verifier, protected environment,
+OIDC permission, and absence of secret/token references. Bootstrap instructions are explicitly
+historical. Trusted-publisher identity, both package token policies, and underlying bootstrap-token
+revocation remain owner-side pre-tag checks; token-free beta.5 publication is the executable proof.
+
+After those review findings were resolved, the independent follow-up verdict was GO with no new
+release blocker. The final-content full gate then passed 169/169 tests with 94.74% lines, 96.02%
+functions, and 89.31% branches. Dogfood sync and JSON validation were clean; the 148-file package
+passed pack inspection, real publish dry-run, local, ephemeral, global, ESM, strict
+declaration, v1-to-v2 migration, initialization, validation, checkpoint, and resume consumers.
+Production audit reported zero vulnerabilities. Exact-commit CI and the tagged OIDC publication
+remain separate release gates and are not claimed by this local evidence.

@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
+import { parse } from "yaml";
 import {
   AckitError,
   CarrylogError,
@@ -66,4 +67,35 @@ test("configuration v1 keeps its published repository wire identities", () => {
     "https://raw.githubusercontent.com/Jaemani/Agent-Context-Kit/main/schemas/config-v1.schema.json",
   );
   assert.equal(schema.title, "Agent Context Kit configuration v1");
+});
+
+test("release publication is OIDC-only after the first-package bootstrap", async () => {
+  const source = await readFile(path.resolve(".github/workflows/release.yml"), "utf8");
+  const workflow = parse(source);
+  const publish = workflow.jobs.publish;
+  const steps = publish.steps;
+
+  assert.equal(publish.environment, "npm");
+  assert.equal(publish.needs, "preflight");
+  assert.deepEqual(publish.permissions, {
+    contents: "read",
+    "id-token": "write",
+  });
+  assert.doesNotMatch(source, /\$\{\{\s*secrets\./u);
+  assert.doesNotMatch(source, /NODE_AUTH_TOKEN|NPM_TOKEN|_authToken/u);
+
+  const releaseClient = steps.findIndex(
+    (step) => step.name === "Pin trusted-publishing npm client",
+  );
+  const publishArtifact = steps.findIndex((step) => step.name === "Publish the verified tarball");
+  const verifyRegistry = steps.findIndex(
+    (step) => step.name === "Verify registry installation and beta tag",
+  );
+  assert.notEqual(releaseClient, -1);
+  assert.equal(steps[releaseClient].run, "npm install --global npm@11.18.0");
+  assert.notEqual(publishArtifact, -1);
+  assert.equal(steps[publishArtifact].run, "npm run release:publish");
+  assert.notEqual(verifyRegistry, -1);
+  assert.equal(steps[verifyRegistry].run, "node scripts/verify-published.mjs");
+  assert.equal(releaseClient < publishArtifact && publishArtifact < verifyRegistry, true);
 });

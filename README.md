@@ -14,10 +14,10 @@ After:  switch agent -> carrylog resume -> inspect one objective, evidence set, 
 
 Carrylog resumes project state, not a provider's private chat or hidden model state.
 
-> **Status:** `carrylog@0.1.0-beta.4` is published on npm's `beta` channel. This repository is
-> preparing the unreleased `0.1.0-beta.5` candidate, which adds the universal adapters,
-> checkpoint/resume, migration, and continuity Skills documented below. The current implementation
-> and known limits are tracked in [Current state](.agent-context/current-state.md) and
+> **Status:** This source represents the reviewed `0.1.0-beta.5` prerelease. npm's explicit `beta`
+> channel is the advancing prerelease channel; first publication forced `latest` to remain at beta.4
+> until stable. Registry verification is part of the protected release workflow. Current limits are
+> tracked in [Current state](.agent-context/current-state.md) and
 > [ADR-0010](docs/decisions/0010-portable-checkpoint-and-resume-boundary.md).
 
 ## See the handoff
@@ -111,11 +111,11 @@ instructions and fail closed on ownership conflicts.
 
 Node.js 22 or newer and a Git worktree are required.
 
-For one-off evaluation of the published beta.4 context layer:
+For one-off evaluation of the current published beta:
 
 ```bash
-npx --yes carrylog@0.1.0-beta.4 init
-npx --yes carrylog@0.1.0-beta.4 validate
+npx --yes carrylog@beta init
+npx --yes carrylog@beta validate
 ```
 
 For a persistent global CLI:
@@ -129,17 +129,15 @@ carrylog validate
 For a team-pinned development dependency:
 
 ```bash
-npm install --save-dev --save-exact carrylog@0.1.0-beta.4
+npm install --save-dev --save-exact carrylog@0.1.0-beta.5
 npx --no-install carrylog init
 npx --no-install carrylog validate
 ```
 
-Beta.4 provides the reviewed context compiler and Codex/Claude adapter path. The universal
-Codex/Claude/Cursor/Gemini surfaces and portable `checkpoint`/`resume` workflow are beta.5 candidate
-features and must be evaluated from source until that version passes its own review and release
-gates.
+Beta.5 provides the reviewed universal Codex/Claude/Cursor/Gemini surfaces and portable
+`checkpoint`/`resume` workflow. Pin the exact version when reproducible team installations matter.
 
-## Try the beta.5 candidate from source
+## Build from source
 
 Node.js 22 or newer and a Git worktree are required.
 

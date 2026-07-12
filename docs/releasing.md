@@ -12,7 +12,12 @@ Releases publish one already-reviewed tarball; the publish step does not rebuild
   `Jaemani/Carrylog`, workflow `release.yml`, and environment `npm`.
 - The release commit is clean and the package version has not been published.
 
-## First-publication bootstrap
+## Historical first-publication bootstrap
+
+This procedure records the beta.4 bootstrap that created the package. The current release workflow is
+OIDC-only, contains no secret-backed token path, and cannot bootstrap another package. A future
+first-publication workflow would require a separately reviewed temporary change and must remove it
+before any subsequent release.
 
 npm trusted-publisher configuration may require an existing package. If the npm package settings do
 not permit preconfiguration, the token UI may also be unable to select the still-unregistered
@@ -28,12 +33,13 @@ tag so GitHub Actions publishes with provenance.
 Immediately after success, require these postconditions in order:
 
 1. verify the exact registry version, three artifact digests, provenance subject, and `beta` tag;
-2. inspect all dist-tags, remove `latest` if npm assigned it to the prerelease, then re-query and
-   require `beta=0.1.0-beta.4` with `latest` absent;
+2. inspect all dist-tags; if npm assigned `latest` during first publication, record the result and
+   keep that bootstrap prerelease fixed there until the first stable release rather than silently
+   advancing bare installs through later betas;
 3. configure and list the trusted publisher, requiring repository `Jaemani/Carrylog`, workflow
    `release.yml`, environment `npm`, and publish permission;
-4. remove the old package's unintended `latest` tag and deprecate its exact beta.3 version; retain
-   its `beta` tag only for the separately bounded migration window described below;
+4. deprecate the old package's exact beta.3 version; retain its registry-required `latest` and
+   temporary `beta` tags for the separately bounded migration window described below;
 5. set Carrylog Publishing access to `Require 2FA and disallow tokens`, preserving the trusted
    publisher while rejecting future granular-token publication;
 6. set the old package to the same token-disallowing policy after its token-based administration is
@@ -44,8 +50,11 @@ Immediately after success, require these postconditions in order:
    token.
 
 The registry may create `latest` for a package's first publication even when npm is invoked with a
-prerelease tag. Do not infer dist-tag state from the publish command. Query the registry after every
-release and remove any unintended stable-channel tag before declaring the prerelease complete.
+prerelease tag. npmjs.org rejects deletion of `latest`; npm 10 and npm 11 surface the rejection as a
+generic HTTP 400, while pnpm 11 reports the underlying `ERR_PNPM_DIST_TAG_RM_LATEST` invariant. Do not
+infer dist-tag state from the publish command or promise that a first-publication `latest` can be
+unset. Carrylog keeps `latest` fixed at the bootstrap beta, requires explicit `carrylog@beta` opt-in
+for later prereleases, and assigns `latest` normally only when the first stable release is ready.
 
 Do not paste tokens into issues, commits, terminal transcripts, or chat. Do not locally rebuild and
 publish a different tarball as a shortcut.
@@ -108,20 +117,21 @@ npm install --global carrylog@beta
 carrylog --version
 ```
 
-Keep `latest` unset until a stable release, and verify this invariant from registry state rather than
-assuming `--tag beta` enforced it. A defective immutable release is followed by a fixed beta and an
-npm deprecation message; do not rely on unpublish as rollback.
+Keep the `beta` tag on the current reviewed prerelease. If first publication forced `latest`, keep it
+fixed at the documented bootstrap beta until a stable release; do not advance bare installs through
+later betas. A defective immutable release is followed by a fixed beta and an npm deprecation
+message; do not rely on unpublish as rollback.
 
 ## Rename migration administration
 
 `@jaemani/agent-context-kit@0.1.0-beta.3` is immutable historical evidence, not a second active
 release line. After `carrylog@0.1.0-beta.4` passes every registry and consumer check:
 
-1. remove the old package's unintended `latest` dist-tag and verify only its temporary `beta` tag
-   remains;
-2. deprecate the exact old version with a message that names `carrylog@beta`, the `carrylog` command,
+1. deprecate the exact old version with a message that names `carrylog@beta`, the `carrylog` command,
    and `https://github.com/Jaemani/Carrylog`;
-3. keep the old `beta` tag through 2026-08-11 so existing installs receive the deprecation message;
+2. retain the registry-required `latest` tag so bare legacy installs receive the same deprecation
+   message; do not attempt to move it to another version;
+3. keep the old `beta` tag through 2026-08-11 so tagged installs receive the deprecation message;
    do not unpublish or rewrite its provenance;
 4. on or after 2026-08-11, review the preceding seven days of public download counts and open
    migration issues, record the result, and remove the old `beta` tag. Extend the date only through a

@@ -81,15 +81,6 @@ jobs:
       - name: Build and verify one release artifact
         run: npm run release:verify
 
-      - name: Configure one-time bootstrap token when present
-        shell: bash
-        run: |
-          if [[ -n "$NODE_AUTH_TOKEN" ]]; then
-            npm config set //registry.npmjs.org/:_authToken "$NODE_AUTH_TOKEN" --location=user
-          fi
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
       - name: Publish the verified tarball
         run: npm run release:publish
 

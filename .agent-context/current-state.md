@@ -2,9 +2,8 @@
 
 ## Active objective
 
-Convert the completed external document review into a delivery-focused beta.5 candidate while
-preserving the immutable beta.4 publication-recovery path. Prepare the minimum Tier 1 continuity
-pilot without implementing journaling or compaction.
+Publish the reviewed beta.5 candidate through the OIDC-only workflow, verify the exact public
+artifact, then run the minimum Tier 1 continuity pilot without implementing journaling or compaction.
 
 ## Implemented and verified
 
@@ -16,16 +15,16 @@ pilot without implementing journaling or compaction.
   limits, and emits terminal-safe human and JSON projections without provider-session data.
 - ADR-0009 through ADR-0012 define universal surfaces, continuity boundaries, Git stability, and
   evidence gates; research protocols remain outside the product package.
-- Dogfood lifecycle, package consumers, and independent post-fix code/security review pass locally.
-  Exact measurements and defect history belong to the engineering log.
+- Dogfood lifecycle, package consumers, complete dist-tag policy, and independent post-fix
+  code/security and release reviews pass locally. Exact measurements belong to the engineering log.
 
 ## In progress
 
-- The reviewed beta.5 implementation commit passed the eleven-job Linux/macOS/Windows CI matrix. A
-  future changelog promotion and release-evidence commit still needs exact-commit release gates.
+- The reviewed beta.5 implementation commit passed the eleven-job Linux/macOS/Windows CI matrix. The
+  final release-content commit still needs exact-commit CI before tagging.
 - Immutable beta.4 is publicly installable from the npm `beta` tag and its artifact and provenance
-  were independently verified. Post-publication registry and credential hardening remains in
-  progress; exact evidence is recorded in the engineering log.
+  were independently verified. The old package now carries an exact migration deprecation and the
+  GitHub bootstrap secret is removed; exact evidence is recorded in the engineering log.
 
 ## Blockers and risks
 
@@ -36,10 +35,13 @@ pilot without implementing journaling or compaction.
 - Sequential cross-file rename and the final path-to-syscall TOCTOU window remain under ADR-0007.
 - External outcome evidence and additional Windows reparse/hard-link coverage remain stable-release
   work.
-- npm post-publication administration remains: remove unintended `latest`, configure trusted
-  publishing, finish old-package migration, disallow tokens, and revoke the bootstrap credential.
+- npmjs.org does not allow removing `latest`; beta.4 remains the documented bare-install bootstrap
+  until stable while `@beta` advances. Bootstrap-token revocation and the beta.5 OIDC publication
+  proof still require verification.
+- Trusted-publisher identity and both packages' token-disallow policies require owner-side pre-tag
+  confirmation because public registry APIs do not expose those settings.
 
 ## Next best task
 
-Finish beta.4 post-publication registry and credential hardening, then prepare the exact beta.5
-release commit and gates. Run Tier 1 after its fixtures are committed.
+Commit and push the settled beta.5 release content, require exact-commit CI, confirm the owner-side npm
+settings, then tag and prove token-free OIDC publication.

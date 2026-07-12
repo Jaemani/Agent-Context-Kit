@@ -26,7 +26,8 @@ Post-publication operations before the beta channel is fully hardened:
 
 - publish and verify `carrylog@0.1.0-beta.4` from the renamed repository;
 - configure protected trusted publishing and retire the short-lived bootstrap token;
-- remove the unintended `latest` dist-tag wherever it points to a prerelease;
+- keep the registry-required first-publication `latest` fixed at beta.4 until stable while later
+  prereleases advance only through explicit `@beta` opt-in;
 - deprecate the old scoped beta with an exact Carrylog migration message;
 - prove a later Carrylog beta publishes through OIDC with no registry token.
 
@@ -39,7 +40,7 @@ Delivery and outcome work now takes priority over additional defensive breadth:
 - revisit positioning and adapter assumptions from evidence rather than registry or standards trends
   alone.
 
-Implemented on the unreleased `0.1.0-beta.5` release-candidate preparation line:
+Implemented in the `0.1.0-beta.5` prerelease line:
 
 - explicit configuration v2 migration without changing frozen v1 semantics;
 - shared Codex/Cursor `agents` surface plus Claude Code and Gemini CLI root routers;

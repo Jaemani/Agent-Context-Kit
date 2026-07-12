@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { resolveNpmInvocation, resolveNpxInvocation } from "./lib/npm-cli.mjs";
+import { assertBetaDistTags } from "./lib/registry-policy.mjs";
 
 const execFileAsync = promisify(execFile);
 const repositoryRoot = path.resolve(import.meta.dirname, "..");
@@ -23,8 +24,8 @@ try {
   let lastError;
   for (let attempt = 1; attempt <= 10; attempt += 1) {
     try {
-      const beta = await npm(["view", manifest.name, "dist-tags.beta", "--json"]);
-      assert.equal(JSON.parse(beta), manifest.version);
+      const tags = JSON.parse(await npm(["view", manifest.name, "dist-tags", "--json"]));
+      assertBetaDistTags(tags, manifest.version);
       const dist = JSON.parse(
         await npm(["view", `${manifest.name}@${manifest.version}`, "dist", "--json"]),
       );
